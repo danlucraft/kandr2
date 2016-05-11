@@ -1,5 +1,5 @@
 /* Folds long lines at last blank character before 80 char line limit */
-// Also: FUCK tabs (decided to treat them like any other character)
+// Also: FUCK tabs (decided to treat them like a single non-blank character)
 
 // to test:
 
@@ -8,8 +8,6 @@
 #include <stdio.h>
 
 #define MAX_LINE  80
-
-int update_column(int col, char c);
 
 int main()
 {
@@ -22,14 +20,11 @@ int main()
 		if (column == MAX_LINE && c != '\n') {
 			if (i < MAX_LINE)
 				putchar('\n');
-			column = 0;
-			for (int j = 0; j < i; j++) {
-				int ch = buffer[j];
-				column = update_column(column, (char) ch);
-				putchar(ch);
-			}
+			for (int j = 0; j < i; j++)
+				putchar(buffer[j]);
 			if (i == MAX_LINE)
 				putchar('\n');
+			column = i;
 			if (column == MAX_LINE)
 				column = 0;
 			i = 0;
@@ -44,18 +39,13 @@ int main()
 			buffer[i++] = (char) c;
 		}
 
-		column = update_column(column, (char) c);
+		if (c == '\n')
+			column = 0;
+		else
+			column++;
 	}
 	for (int j = 0; j < i; j++)
 		putchar(buffer[j]);
-}
-
-int update_column(int col, char c)
-{
-	if (c == '\n')
-		return 0;
-	else
-		return col+1;
 }
 
 /*
