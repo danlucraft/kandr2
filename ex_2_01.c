@@ -4,25 +4,25 @@
 #include <limits.h>
 #include <float.h>
 
-unsigned char uchar_max();
-char char_max();
-char char_min();
+unsigned char uchar_max(void);
+char char_max(void);
+char char_min(void);
 
-unsigned short ushort_max();
-short short_max();
-short short_min();
+unsigned short ushort_max(void);
+short short_max(void);
+short short_min(void);
 
-unsigned int uint_max();
-int int_max();
-int int_min();
+unsigned int uint_max(void);
+int int_max(void);
+int int_min(void);
 
-unsigned long ulong_max();
-long long_max();
-long long_min();
+unsigned long ulong_max(void);
+long long_max(void);
+long long_min(void);
 
-unsigned long ullong_max();
-long llong_max();
-long llong_min();
+unsigned long ullong_max(void);
+long llong_max(void);
+long llong_min(void);
 
 int main()
 {
