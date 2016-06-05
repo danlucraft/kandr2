@@ -99,7 +99,6 @@ int main()
         bitcount2((unsigned) rand());
 }
 
-
 /*
 
    $ clang -g -Wno-newline-eof -Weverything ex_2_09.c && time ./a.out
