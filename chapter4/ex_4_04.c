@@ -20,12 +20,13 @@ c - clear the stack
 int getop(char []);
 void push(double);
 double pop(void);
+void clear(void);
 
 /* reverse polish calculator */
 int main()
 {
 	int type;
-	double op2;
+	double op1, op2;
 	char s[MAXOP];
 
 	while ((type = getop(s)) != EOF) {
@@ -53,6 +54,25 @@ int main()
 		case '%':
 			op2 = pop();
 			push(fmod(pop(),op2));
+			break;
+		case 'p':
+			op2 = pop();
+			printf("\t%.8g\n", op2);
+			push(op2);
+			break;
+		case 'd':
+			op2 = pop();
+			push(op2);
+			push(op2);
+			break;
+		case 's':
+			op1 = pop();
+			op2 = pop();
+			push(op1);
+			push(op2);
+			break;
+		case 'c':
+			clear();
 			break;
 		case '\n':
 			printf("\t%.8g\n", pop());
@@ -89,6 +109,12 @@ double pop(void)
 		printf("error: stack empty\n");
 		return 0.0;
 	}
+}
+
+/* clear: empty the stack */
+void clear(void)
+{
+	sp = 0;
 }
 
 static int getch(void);
@@ -145,3 +171,23 @@ void ungetch(int c) /* push character back on input */
 	else
 		buf[bufp++] = (char) c;
 }
+
+/*
+
+$ clang -g -Weverything chapter4/ex_4_04.c && ./a.out
+1 p 2 p +
+    1
+	2
+	3
+1 d +
+	2
+2 1 -
+	1
+2 1 s -
+	-1
+1 2 c +
+error: stack empty
+error: stack empty
+    0
+
+*/
