@@ -1,4 +1,4 @@
-
+/* Add % operator and negative numbers to this reverse polish calculator */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,10 +100,10 @@ int getop(char s[])
 		/* get then ungetch the next character to see if this
 		 * is a negative number or not */
 		c = getch();
+		ungetch(c);
 		if (!isdigit(c) && c != '.') {
 			return '-';
 		}
-		ungetch(c);
 	}
 
 	i = 0;
