@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 #define MAXOP   100 /* max size of operand or operator */
 #define NUMBER  '0' /* signal that a number was found */
@@ -39,6 +40,10 @@ int main()
 				push(pop() / op2);
 			else
 				printf("error: zero divisor\n");
+			break;
+		case '%':
+			op2 = pop();
+			push(fmod(pop(),op2));
 			break;
 		case '\n':
 			printf("\t%.8g\n", pop());
@@ -88,8 +93,19 @@ int getop(char s[])
 	while ((c = getch(), s[0] = (char) c) == ' ' || c == '\t')
 		;
 	s[1] = '\0';
-	if (!isdigit(c) && c != '.')
+	if (!isdigit(c) && c != '.' && c != '-')
 		return c;    /* not a number */
+
+	if (c == '-') {
+		/* get then ungetch the next character to see if this
+		 * is a negative number or not */
+		c = getch();
+		if (!isdigit(c) && c != '.') {
+			return '-';
+		}
+		ungetch(c);
+	}
+
 	i = 0;
 	if (isdigit(c))  /* collect integer part */
 		while (c = getch(), s[++i] = (char) c, isdigit(s[i]))
