@@ -61,6 +61,18 @@ int main()
 				push(op2);
 			} else if (streq("c", s) || streq("clear", s)) {
 				clear();
+			} else if (streq("sin", s)) {
+				push(sin(pop()));
+			} else if (streq("cos", s)) {
+				push(cos(pop()));
+			} else if (streq("tan", s)) {
+				push(tan(pop()));
+			} else if (streq("exp", s)) {
+				push(exp(pop()));
+			} else if (streq("pow", s)) {
+				op2 = pop();
+				op1 = pop();
+				push(pow(op1, op2));
 			} else if (streq("\n", s)) {
 				printf("\t%.8g\n", pop());
 			} else {
@@ -190,13 +202,15 @@ void ungetch(int c) /* push character back on input */
 /*
 
 $ clang -Weverything chapter4/ex_4_05.c && ./a.out
-1 2 +
-	3
-1 d +
-	2
-2 1 -
-	1
-2 1 swap -
-	-1
+1 sin
+	0.84147098
+1 cos
+	0.54030231
+1 tan
+	1.5574077
+1 exp
+	2.7182818
+2 3 pow
+	8
 
 */
