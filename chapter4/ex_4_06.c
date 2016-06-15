@@ -1,5 +1,7 @@
 /*
 
+Add commands for handling variables. Add a variable for the 
+most recently printed value.
 
 */
 
@@ -18,6 +20,9 @@ double pop(void);
 void clear(void);
 int streq(char* a, char* b);
 
+static double vars[26];
+static double last;
+
 /* reverse polish calculator */
 int main()
 {
@@ -29,6 +34,7 @@ int main()
 		if (type == NUMBER) {
 			push(atof(s));
 		} else if (type == OP) {
+			// arithmetic
 			if (streq("+", s)) {
 				push(pop() + pop());
 			} else if (streq("*", s)) {
@@ -45,6 +51,8 @@ int main()
 			} else if (streq("%", s)) {
 				op2 = pop();
 				push(fmod(pop(),op2));
+
+			// stack manipulation 
 			} else if (streq("p", s) || streq("peek", s)) {
 				op2 = pop();
 				printf("\t%.8g\n", op2);
@@ -60,6 +68,8 @@ int main()
 				push(op2);
 			} else if (streq("c", s) || streq("clear", s)) {
 				clear();
+
+			// maths
 			} else if (streq("sin", s)) {
 				push(sin(pop()));
 			} else if (streq("cos", s)) {
@@ -72,8 +82,19 @@ int main()
 				op2 = pop();
 				op1 = pop();
 				push(pow(op1, op2));
+
+			// pop and print
 			} else if (streq("\n", s)) {
-				printf("\t%.8g\n", pop());
+				last = pop();
+				printf("\t%.8g\n", last);
+
+			// variables
+			} else if (s[0] == '>') {
+				vars[s[1] - 'a'] = pop();
+			} else if (s[1] == '>') {
+				push(vars[s[0] - 'a']);
+			} else if (streq("_", s)) {
+				push(last);
 			} else {
 				printf("error: unknown command %s\n", s);
 			}
@@ -199,5 +220,18 @@ void ungetch(int c) /* push character back on input */
 }
 
 /*
+
+$ clank -Weverything chapter4/ex_4_06.c && ./a.out
+2 4 * >a
+error: stack empty
+	0
+a> 2 *
+	16
+
+$ clang -Weverything chapter4/ex_4_06.c && ./a.out
+2 5 *
+	10
+_ 2 +
+	12
 
 */
