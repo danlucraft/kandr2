@@ -147,6 +147,8 @@ int getop(char s[])
 
 	if (streq(s, "\n"))
 		return OP;
+	if (s[0] == EOF)
+		return EOF;
 
 	while ((c = getch(), s[i++] = (char) c) != ' ' && c != '\t' && c != '\n' && c != EOF)
 		;
