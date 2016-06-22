@@ -1,5 +1,19 @@
 /*
 
+Our getch and ungetch do not handle a pushed-back EOF correctly. Decide what 
+their properties ought to be if an EOF is pushed back, then implement your 
+design.
+
+@danlucraft: I don't understand this one, it seems to work fine. Witness I 
+added an ungetch(EOF) before the main loop and it quits as desired.
+
+The discussion online about this seems to centre on the buf array being of type
+char and that it needs to be of type int to hold the EOF correctly (EOF = -1). 
+But char allows values from -128 to 127 right? Was that not true when this was 
+written, or is it not true on other architectures/systems?
+
+So, the code here is unmodified, but seems to work fine.
+
 */
 
 #include <stdio.h>
@@ -18,6 +32,9 @@ double pop(void);
 void clear(void);
 int streq(char* a, char* b);
 
+static int getch(void);
+static void ungetch(int);
+
 static double vars[26];
 static double last;
 
@@ -27,6 +44,8 @@ int main()
 	int type;
 	double op1, op2;
 	char s[MAXOP];
+
+	ungetch(EOF);
 
 	while ((type = getop(s)) != EOF) {
 		if (type == NUMBER) {
@@ -148,9 +167,6 @@ int streq(char* a, char* b)
 	return 1;
 }
 
-static int getch(void);
-static void ungetch(int);
-
 /* getop:   get next operator or numeric operand */
 int getop(char s[])
 {
@@ -227,6 +243,3 @@ void ungetch(int c) /* push character back on input */
 		buf[bufp++] = (char) c;
 }
 
-/*
-
-*/
