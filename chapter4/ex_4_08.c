@@ -1,5 +1,8 @@
 /*
 
+Suppose that there will never be more than one character of pushback. 
+Modify getch and ungetch accordingly.
+
 */
 
 #include <stdio.h>
@@ -198,25 +201,40 @@ int getop(char s[])
 	return NUMBER;
 }
 
-#define BUFSIZE 100
-
-static char buf[BUFSIZE]; /* buffer for ungetch */
-static int bufp = 0;      /* next free position in buf */
+static int value_occupied = 0;
+static int value = 0;
 
 int getch(void) /* get a (possibly pushed back) character */
 {
-	return (bufp > 0) ? buf[--bufp] : getchar();
+	if (value_occupied) {
+		value_occupied = 0;
+		return value;
+	} else {
+		return getchar();
+	}
 }
 
 void ungetch(int c) /* push character back on input */
 {
-	if (bufp >= BUFSIZE)
-		printf("ungetch: too many characters\n");
-	else
-		buf[bufp++] = (char) c;
+	if (value_occupied) {
+		printf("ungetch: buffer already occupied\n");
+	}
+	else {
+		value_occupied = 1;
+		value = c;
+	}
 }
 
 /*
 
+$ clang -Weverything chapter4/ex_4_08.c && ./a.out
+1 2 +
+		3
+1 sin
+		0.84147098
+3 >a 4
+		4
+a> 2 +
+		5
 
 */
