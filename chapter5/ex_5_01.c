@@ -1,8 +1,19 @@
+/*
+
+As written, getint treats a + or - not followed by a digit as a valid 
+representation of zero. Fix it to push such a character back on the input.
+
+danlucraft: OK, did it. Not sure what the lesson about pointers is 
+supposed to be...
+
+*/
+
 #include <ctype.h>
 #include <stdio.h>
 
 int getch(void);
 void ungetch(int);
+void debugbuf(void);
 int getint(int *);
 
 int main()
@@ -10,8 +21,12 @@ int main()
 	int i;
 
 	printf(">> ");
-	getint(&i);
-	printf("got: %d\n", i);
+	if (getint(&i)) {
+		printf("got: %d\n", i);
+	} else {
+		printf("not a number\n");
+	}
+	debugbuf();
 }
 
 /* getint: get next integer from input into *pn */
@@ -28,8 +43,17 @@ int getint(int *pn)
 	}
 
 	sign = (c == '-') ? -1 : 1;
-	if (c == '+' || c == '-')
+
+	if (c == '+' || c == '-') {
+		int c1 = c;
 		c = getch();
+		if (!isdigit(c)) {
+			ungetch(c);
+			ungetch(c1);
+			return 0;
+		}
+	}
+
 	for (*pn = 0; isdigit(c); c = getch())
 		*pn = 10 * *pn + (c - '0');
 	*pn *= sign;
@@ -56,3 +80,10 @@ void ungetch(int c) /* push character back on input */
 		buf[bufp++] = (char) c;
 }
 
+void debugbuf()
+{
+	printf("buf: [");
+	for (int i = 0; i < bufp; i++)
+		printf("%d, ", buf[i]);
+	printf("]\n");
+}
