@@ -164,8 +164,11 @@ int getop(char s[])
 	static int value = 0;
 	static int value_occupied = 0;
 
-	while ((c = getch(value, value_occupied), value_occupied = 0, s[0] = (char) c) == ' ' || c == '\t')
-		;
+	do {
+		c = getch(value, value_occupied);
+		value_occupied = 0;
+		s[0] = (char) c;
+	} while(c == ' ' || c == '\t');
 
 	s[1] = '\0';
 	i = 1;
@@ -175,8 +178,13 @@ int getop(char s[])
 	if (s[0] == EOF)
 		return EOF;
 
-	while ((c = getch(value, value_occupied), value_occupied = 0, s[i++] = (char) c) != ' ' && c != '\t' && c != '\n' && c != EOF)
-		;
+	do {
+		c = getch(value, value_occupied);
+		value_occupied = 0;
+		s[i++] = (char) c;
+	} while (c != ' ' && c != '\t' && c != '\n' && c != EOF);
+
+	/* ungetch replacement here: */
 	value = c;
 	value_occupied = 1;
 
