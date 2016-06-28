@@ -1,5 +1,12 @@
 /*
 
+Modify getop so that it doesn't need to use ungetch. Hint: use an internal static variable.
+
+danlucraft: it says use "an" internal variable but I think it needs another one to
+tell if the variable actually contains a value or not. Unless you wanted
+to overload the contents of the value so that -2 means not storing a value or
+something?
+
 */
 
 #include <stdio.h>
@@ -147,16 +154,17 @@ int streq(char* a, char* b)
 	return 1;
 }
 
-static int getch(void);
-static void ungetch(int);
+int getch(int, int);
 
 /* getop:   get next operator or numeric operand */
 int getop(char s[])
 {
 	int i = 0;
 	int c;
+	static int value = 0;
+	static int value_occupied = 0;
 
-	while ((c = getch(), s[0] = (char) c) == ' ' || c == '\t')
+	while ((c = getch(value, value_occupied), value_occupied = 0, s[0] = (char) c) == ' ' || c == '\t')
 		;
 
 	s[1] = '\0';
@@ -167,9 +175,10 @@ int getop(char s[])
 	if (s[0] == EOF)
 		return EOF;
 
-	while ((c = getch(), s[i++] = (char) c) != ' ' && c != '\t' && c != '\n' && c != EOF)
+	while ((c = getch(value, value_occupied), value_occupied = 0, s[i++] = (char) c) != ' ' && c != '\t' && c != '\n' && c != EOF)
 		;
-	ungetch(c);
+	value = c;
+	value_occupied = 1;
 
 	s[i - 1] = '\0';
 
@@ -200,24 +209,8 @@ int getop(char s[])
 	return NUMBER;
 }
 
-#define BUFSIZE 100
-
-static char buf[BUFSIZE]; /* buffer for ungetch */
-static int bufp = 0;      /* next free position in buf */
-
-int getch(void) /* get a (possibly pushed back) character */
+int getch(int value, int value_occupied) 
 {
-	return (bufp > 0) ? buf[--bufp] : getchar();
+	return value_occupied ? value : getchar();
 }
 
-void ungetch(int c) /* push character back on input */
-{
-	if (bufp >= BUFSIZE)
-		printf("ungetch: too many characters\n");
-	else
-		buf[bufp++] = (char) c;
-}
-
-/*
-
-*/
