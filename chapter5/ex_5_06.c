@@ -62,7 +62,6 @@ void my_itoa(int n, char *s)
 	if (sign < 0)
 		*s++ = '-';
 	*s = '\0';
-	printf("foo: %s\n", s);
 	reverse(t);
 }
 
@@ -76,10 +75,8 @@ char* strindex(char *s, char *t)
 	while (*s) {
 		s1 = s;
 		t1 = t;
-		while (*t1 == *s1) {
-			t1++;
-			s1++;
-		}
+		for (; *t1 == *s1; t1++, s1++) 
+			;
 		if (*t1 == '\0')
 			return (char *) s;
 		s++;
@@ -156,7 +153,6 @@ testreverse("x") = "x"
 testreverse("xy") = "yx"
 testreverse("xyz") = "zyx"
 testreverse("0123456789") = "9876543210"
-foo:
 my_itoa(50904) = "50904"
 strindex("foobarbaz", "foo") = "foobarbaz"
 strindex("foobarbaz", "bar") = "barbaz"
