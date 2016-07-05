@@ -3,27 +3,32 @@
 Rewrite readlines to store lines in an array supplied by main, rather than 
 calling alloc to maintain storage. How much faster is the program?
 
+danlucraft: Not quite sure what this is after. What I've done is have 
+readlines just copy straight into the big array with no strcpy.
+
+Result: it's exactly the same.
+
 */
 
 #include <stdio.h>
 #include <string.h>
 
 #define MAXLINES 200000
+#define MAXLEN 10
+#define ALLOCSIZE 100000*12*10
 
-static char *lineptr[MAXLINES];
-
-int readlines(char *linep[], int nlines);
+int readlines(char *linep[], char allocbuf[], int nlines);
 void writelines(char *linep[], int nlines);
 void qsort(char *linep[], int left, int right);
 void swap(char *v[], int i, int j);
 
-char *alloc(int n);
-void afree(char *p);
+static char allocbuf[ALLOCSIZE];
+static char *lineptr[MAXLINES];
 
 int main()
 {
 	int nlines;
-	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
+	if ((nlines = readlines(lineptr, allocbuf, MAXLINES)) >= 0) {
 		qsort(lineptr, 0, nlines-1);
 		writelines(lineptr, nlines);
 		return 0;
@@ -33,23 +38,23 @@ int main()
 	}
 }
 
-#define MAXLEN 10
 int get_line(char *s, int lim);
 char *alloc(int);
 
-int readlines(char *linep[], int maxlines)
+int readlines(char *lines[], char mem[], int maxlines)
 {
 	int len, nlines;
-	char *p, line[MAXLEN];
+	char *p = mem;
 	nlines = 0;
-	while ((len = get_line(line, MAXLEN)) > 0)
-		if (nlines >= maxlines || (p = alloc(len)) == NULL)
+	while ((len = get_line(p, MAXLEN)) > 0) {
+		if (nlines >= maxlines) {
 			return -1;
-		else {
-			line[len-1] = '\0'; // delete newline
-			strcpy(p, line);
-			linep[nlines++] = p;
+		} else {
+			p[len-1] = '\0'; // delete newline
+			lines[nlines++] = p;
+			p += len;
 		}
+	}
 	return nlines;
 }
 
@@ -95,25 +100,3 @@ void swap(char *v[], int i, int j)
 	v[i] = v[j];
 	v[j] = temp;
 }
-
-#define ALLOCSIZE 100000*12*10
-
-static char allocbuf[ALLOCSIZE];
-static char *allocp = allocbuf;
-
-char *alloc(int n)
-{
-	if (allocbuf + ALLOCSIZE - allocp >= n) {
-		allocp += n;
-		return allocp - n;
-	} else {
-		return 0;
-	}
-}
-
-void afree(char *p)
-{
-	if (p >= allocbuf && p < allocbuf + ALLOCSIZE)
-		allocp = p;
-}
-
