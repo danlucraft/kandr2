@@ -1,5 +1,7 @@
 /*
 
+Rewrite the routines day_of_year and month_day with pointers instead of indexing.
+
 */
 
 #include <stdio.h>
@@ -19,15 +21,18 @@ int day_of_year(int year, int month, int day)
 	// &&'s precedence is tighter than ||, ballsy
 	leap = year % 4 == 0 && year % 100 != 0 || year % 400 == 0;
 
+	char *month_days = daytab[leap];
+
 	if (year < GREGORIAN_START_YEAR)
 		return -1;
 	if (month < 1 || month > 12)
 		return -1;
-	if (day < 1 || day > daytab[leap][month])
+	if (day < 1 || day > *(month_days + month))
 		return -1;
 
-	for (i = 1; i < month; i++)
-		day += daytab[leap][i];
+	month_days++;
+	for (i = 1; i < month; month_days++, i++)
+		day += *month_days;
 	return day;
 }
 
@@ -43,8 +48,10 @@ int month_day(int year, int yearday, int *pmonth, int *pday)
 	if (yearday < 1 || (!leap && yearday > 365) || (leap && yearday > 366))
 		return -1;
 
-	for (i = 1; yearday > daytab[leap][i]; i++)
-		yearday -= daytab[leap][i];
+	char *month_days = daytab[leap];
+
+	for (i = 1; yearday > *(month_days + i); i++)
+		yearday -= *(month_days + i);
 
 	*pmonth = i;
 	*pday = yearday;
