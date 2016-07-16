@@ -1,47 +1,62 @@
 /*
 
+Extend entab to accept the shorthand `entab -m +n` to mean tab stops every _n_
+columns, starting at column _m_. Choose convenient (for the user) default
+behaviour.
+
+NB this file is indented with spaces to make it a test case for itself.
+
 */
 
 #include <stdio.h>
 #include <ctype.h>
 
 #define DEFAULT_TAB_WIDTH  4
+#define DEFAULT_TAB_START  0
 
+// have fixed this so it won't set val unless it gets a valid integer
 int to_i(char *s, int *val);
 int to_i(char *s, int *val)
 {
-    *val= 0;
+    int result = 0;
     int got = 0;
     for (; isdigit(s[0]); s++) {
         got = 1;
-        *val *= 10;
-        *val += s[0] - '0';
+        result *= 10;
+        result += s[0] - '0';
     }
+	if (got)
+		*val = result;
     return got;
 }
 
-int next_tab_stop(int col, int argc, char *argv[]);
-int next_tab_stop(int col, int argc, char *argv[])
-{
-    if (argc > 1) {
-        char **tab_stops = ++argv;
-        while (*tab_stops) {
-            int stop;
-            if (to_i(*tab_stops, &stop) && stop > col) {
-                return stop;
-            }
-            tab_stops++;
-        }
-    }
-    return ((col + DEFAULT_TAB_WIDTH) / DEFAULT_TAB_WIDTH) * DEFAULT_TAB_WIDTH;
-}
+static int tab_width = DEFAULT_TAB_WIDTH;
+static int tab_start = DEFAULT_TAB_START;
 
+int next_tab_stop(int col);
+int next_tab_stop(int col)
+{
+    if (col < tab_start)
+		return tab_start;
+
+	return (((col + tab_width) - tab_start) / tab_width ) * tab_width + tab_start;
+}
 
 int main(int argc, char *argv[])
 {
     int column = 0;
     int space_run = 0;
     int c;
+    if (argc > 1) {
+        argv++;
+        while (argv[0]) {
+            if (argv[0][0] == '-')
+                to_i(&argv[0][1], &tab_start);
+            if (argv[0][0] == '+')
+                to_i(&argv[0][1], &tab_width);
+            argv++;
+        }
+    }
 
     while ((c = getchar()) != EOF) {
         if (c == ' ') {
@@ -58,7 +73,7 @@ int main(int argc, char *argv[])
             }
             while (space_run > 0) {
                 int start_of_space_run = column - space_run;
-                int next_stop = next_tab_stop(start_of_space_run, argc, argv);
+                int next_stop = next_tab_stop(start_of_space_run);
                 if (next_stop <= column) {
                     putchar('\t');
                     space_run -= next_stop - start_of_space_run;
@@ -80,80 +95,70 @@ int main(int argc, char *argv[])
 
 /*
 
-$ clang -Weverything chapter5/ex_5_11_entab.c && tail -n 76 chapter5/ex_5_11_entab.c | ./a.out 2 4 8 16 100 | ruby -e 'STDIN.read.split("\n").each {|l| p l}'
-"#include <ctype.h>"
+clang -Weverything chapter5/ex_5_12_entab.c && tail -n 76 chapter5/ex_5_12_entab.c | ./a.out -4 +8 | ruby -e 'STDIN.read.split("\n").each {|l| p l}'
 ""
-"#define DEFAULT_TAB_WIDTH  4"
+"static int tab_width = DEFAULT_TAB_WIDTH;"
+"static int tab_start = DEFAULT_TAB_START;"
 ""
-"int to_i(char *s, int *val);"
-"int to_i(char *s, int *val)"
+"int next_tab_stop(int col);"
+"int next_tab_stop(int col)"
 "{"
-"\t\t*val= 0;"
-"\t\tint got = 0;"
-"\t\tfor (; isdigit(s[0]); s++) {"
-"\t\t\tgot = 1;"
-"\t\t\t*val *= 10;"
-"\t\t\t*val += s[0] - '0';"
-"\t\t}"
-"\t\treturn got;"
-"}"
+"\tif (col < tab_start)"
+"\t\treturn tab_start;"
 ""
-"int next_tab_stop(int col, int argc, char *argv[]);"
-"int next_tab_stop(int col, int argc, char *argv[])"
-"{"
-"\t\tif (argc > 1) {"
-"\t\t\tchar **tab_stops = ++argv;"
-"\t\t\twhile (*tab_stops) {"
-"\t\t\t    int stop;"
-"\t\t\t    if (to_i(*tab_stops, &stop) && stop > col) {"
-"\t\t\t\treturn stop;"
-"\t\t\t    }"
-"\t\t\t    tab_stops++;"
-"\t\t\t}"
-"\t\t}"
-"\t\treturn ((col + DEFAULT_TAB_WIDTH) / DEFAULT_TAB_WIDTH) * DEFAULT_TAB_WIDTH;"
+"\treturn (((col + tab_width) - tab_start) / tab_width ) * tab_width + tab_start;"
 "}"
-""
 ""
 "int main(int argc, char *argv[])"
 "{"
-"\t\tint column = 0;"
-"\t\tint space_run = 0;"
-"\t\tint c;"
+"\tint column = 0;"
+"\tint space_run = 0;"
+"\tint c;"
+"\tif (argc > 1) {"
+"\t    argv++;"
+"\t    while (argv[0]) {"
+"\t\tif (argv[0][0] == '-')"
+"\t\t    to_i(&argv[0][1], &tab_start);"
+"\t\tif (argv[0][0] == '+')"
+"\t\t    to_i(&argv[0][1], &tab_width);"
+"\t\targv++;"
+"\t    }"
+"\t}"
 ""
-"\t\twhile ((c = getchar()) != EOF) {"
-"\t\t\tif (c == ' ') {"
-"\t\t\t    ++space_run;"
-"\t\t\t}"
-"\t\t\telse if (c == '\\n') {"
-"\t\t\t    column = -1;"
-"\t\t\t    space_run = 0;"
-"\t\t\t    putchar(c);"
-"\t\t\t} else {"
-"\t\t\t    if (space_run == 1) {"
-"\t\t\t\tputchar(' ');"
-"\t\t\t\tspace_run = 0;"
-"\t\t\t    }"
-"\t\t\t    while (space_run > 0) {"
-"\t\t\t\tint start_of_space_run = column - space_run;"
-"\t\t\t\tint next_stop = next_tab_stop(start_of_space_run, argc, argv);"
-"\t\t\t\tif (next_stop <= column) {"
-"\t\t\t\t    putchar('\\t');"
-"\t\t\t\t    space_run -= next_stop - start_of_space_run;"
-"\t\t\t\t} else {"
-"\t\t\t\t    for (; space_run > 0; space_run--)"
-"\t\t\t\t        putchar(' ');"
-"\t\t\t\t}"
-"\t\t\t    }"
-""
-"\t\t\t    putchar(c);"
-"\t\t\t}"
-"\t\t\t++column;"
+"\twhile ((c = getchar()) != EOF) {"
+"\t    if (c == ' ') {"
+"\t\t++space_run;"
+"\t    }"
+"\t    else if (c == '\\n') {"
+"\t\tcolumn = -1;"
+"\t\tspace_run = 0;"
+"\t\tputchar(c);"
+"\t    } else {"
+"\t\tif (space_run == 1) {"
+"\t\t    putchar(' ');"
+"\t\t    space_run = 0;"
 "\t\t}"
+"\t\twhile (space_run > 0) {"
+"\t\t    int start_of_space_run = column - space_run;"
+"\t\t    int next_stop = next_tab_stop(start_of_space_run);"
+"\t\t    if (next_stop <= column) {"
+"\t\t\tputchar('\\t');"
+"\t\t\tspace_run -= next_stop - start_of_space_run;"
+"\t\t    } else {"
+"\t\t\tfor (; space_run > 0; space_run--)"
+"\t\t\t    putchar(' ');"
+"\t\t    }"
+"\t\t}"
+""
+"\t\tputchar(c);"
+"\t    }"
+"\t    ++column;"
+"\t}"
 "}"
 ""
 "// test line"
-"//\tb\tc\t    d e f   g\t\t\t\t\t\th"
-"//\t\t\t        b"
+"//\tb   c\t\td e f\tg\t\t\t\t\t\t\t\t\t\t\t    h"
+"//\t\t\t    b"
+""
 
 */
