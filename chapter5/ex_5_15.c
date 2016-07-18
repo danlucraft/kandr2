@@ -1,7 +1,7 @@
 /*
 
-Modify the sort program to handl a -r flag, which indicates sorting in reverse
-(decreasing) order.
+Add the option -f to fold upper and lower case together, so that case
+distinctions are not made during sorting; for example, a and A compare equal.
 
 */
 
@@ -20,6 +20,7 @@ void my_qsort(void *linep[], int left, int right,
 			   int (*comp)(void *, void *),
 			   int comp_factor);
 int numcmp(const char *, const char *);
+int strcmpi(const char *, const char *);
 void swap(void *v[], int i, int j);
 
 static char allocbuf[ALLOCSIZE];
@@ -30,17 +31,23 @@ int main(int __unused argc, char *argv[])
 	int nlines;
 	int numeric = 0;
 	int comp_factor = 1;
+	int case_insensitive = 0;
 
 	while (*++argv) {
 		if (strcmp(argv[0], "-n") == 0)
 			numeric = 1;
 		if (strcmp(argv[0], "-r") == 0)
 			comp_factor = -1;
+		if (strcmp(argv[0], "-f") == 0)
+			case_insensitive = -1;
 	}
 
 	if ((nlines = readlines(lineptr, allocbuf, MAXLINES)) >= 0) {
-		my_qsort((void **) lineptr, 0, nlines - 1,
-			  (int (*)(void*,void*))(numeric ? numcmp : strcmp), comp_factor);
+		int (*func)(void*,void*) = (int (*)(void*,void*))
+			(numeric ? numcmp :
+					   (case_insensitive ? strcmpi :
+										   strcmp)) ;
+		my_qsort((void **) lineptr, 0, nlines - 1, func, comp_factor);
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
@@ -129,20 +136,53 @@ int numcmp(const char *s1, const char *s2)
 		return 0;
 }
 
+int charcmpi(char a, char b);
+int charcmpi(char a, char b)
+{
+	if (a >= 'A' && a <= 'Z')
+		a += 'a' - 'A';
+	if (b >= 'A' && b <= 'Z')
+		b += 'a' - 'A';
+	if (a < b)
+		return -1;
+	else if (a > b)
+		return 1;
+	else
+		return 0;
+}
+
+// return <0 if cs < ct, 0 if cs = ct, >0 if cs > ct
+int strcmpi(const char *cs, const char *ct)
+{
+	for (; charcmpi(*cs, *ct) == 0 ; cs++, ct++)
+		if (*cs == '\0')
+			return 0;
+	return charcmpi(*cs, *ct);
+}
+
 /*
 
-$ clang -Weverything chapter5/ex_5_14.c && cat chapter5/ex_5_14.test | ./a.out -r -n
-222222
-123
-89
-67
-64
-56
-35
-34
-23
-11
-6
-1
+clang -Weverything chapter5/ex_5_15.c && cat chapter5/ex_5_15.test | ./a.out
+B
+D
+Fj
+a
+c
+e
+$ clang -Weverything chapter5/ex_5_15.c && cat chapter5/ex_5_15.test | ./a.out -f
+a
+B
+c
+D
+e
+Fj
+~/Dropbox/Code/kandr2 (master)
+$ clang -Weverything chapter5/ex_5_15.c && cat chapter5/ex_5_15.test | ./a.out -f -r
+Fj
+e
+D
+c
+B
+a
 
 */
