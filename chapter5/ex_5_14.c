@@ -1,9 +1,13 @@
 /*
 
+Example from section 5.11, modifying the sort programme to run a numeric sort 
+if given -n option.
+
 */
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define MAXLINES 200000
 #define MAXLEN 10
@@ -11,17 +15,26 @@
 
 int readlines(char *linep[], char allocbuf[], int nlines);
 void writelines(char *linep[], int nlines);
-void qsort(char *linep[], int left, int right);
-void swap(char *v[], int i, int j);
+
+void my_qsort(void *linep[], int left, int right,
+		   int (*comp)(void *, void *));
+int numcmp(const char *, const char *);
+void swap(void *v[], int i, int j);
 
 static char allocbuf[ALLOCSIZE];
 static char *lineptr[MAXLINES];
 
-int main()
+int main(int argc, char *argv[])
 {
 	int nlines;
+	int numeric = 0;
+
+	if (argc > 1 && strcmp(argv[1], "-n") == 0)
+		numeric = 1;
+
 	if ((nlines = readlines(lineptr, allocbuf, MAXLINES)) >= 0) {
-		qsort(lineptr, 0, nlines-1);
+		my_qsort((void **) lineptr, 0, nlines - 1,
+			  (int (*)(void*,void*))(numeric ? numcmp : strcmp));
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
@@ -70,25 +83,73 @@ int get_line(char *s, int lim)
 	return i;
 }
 
-void qsort(char *v[], int left, int right)
+void my_qsort(void *v[], int left, int right,
+		      int (*comp)(void *, void *))
 {
 	int i, last;
 	if (left >= right)
 		return;
+
 	swap(v, left, (left+right)/2);
 	last = left;
 	for (i = left+1; i <= right; i++)
-		if (strcmp(v[i], v[left]) < 0)
+		if ((*comp)(v[i], v[left]) < 0)
 			swap(v, ++last, i);
 	swap(v, left, last);
-	qsort(v, left, last-1);
-	qsort(v, last+1, right);
+	my_qsort(v, left, last-1, comp);
+	my_qsort(v, last+1, right, comp);
 }
 
-void swap(char *v[], int i, int j)
+void swap(void *v[], int i, int j)
 {
 	char *temp;
 	temp = v[i];
 	v[i] = v[j];
 	v[j] = temp;
 }
+
+int numcmp(const char *s1, const char *s2)
+{
+	double v1, v2;
+
+	v1 = atof(s1);
+	v2 = atof(s2);
+	if (v1 < v2)
+		return -1;
+	else if (v1 > v2)
+		return 1;
+	else
+		return 0;
+}
+
+/*
+
+$ clang -Weverything chapter5/ex_5_14.c && cat chapter5/ex_5_14.test | ./a.out
+1
+11
+123
+222222
+23
+34
+35
+56
+6
+64
+67
+89
+~/Dropbox/Code/kandr2 (master)
+$ clang -Weverything chapter5/ex_5_14.c && cat chapter5/ex_5_14.test | ./a.out -n
+1
+6
+11
+23
+34
+35
+56
+64
+67
+89
+123
+222222
+
+*/
