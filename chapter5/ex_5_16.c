@@ -70,7 +70,6 @@ int main(int __unused argc, char *argv[])
 }
 
 int get_line(char *s, int lim);
-char *alloc(int);
 
 int readlines(char *lines[], char mem[], int maxlines)
 {
@@ -138,26 +137,8 @@ int cmp(const char *s1, const char *s2, int numeric, int case_insensitive, int d
 {
 	if (numeric)
 		return numcmp(s1, s2);
-	else {
-		int r = my_strcmp(s1, s2, case_insensitive, directory_order);
-		return r;
-	}
-}
-
-
-int charcmpi(char a, char b);
-int charcmpi(char a, char b)
-{
-	if (a >= 'A' && a <= 'Z')
-		a += 'a' - 'A';
-	if (b >= 'A' && b <= 'Z')
-		b += 'a' - 'A';
-	if (a < b)
-		return -1;
-	else if (a > b)
-		return 1;
 	else
-		return 0;
+		return my_strcmp(s1, s2, case_insensitive, directory_order);
 }
 
 int charcmp(char a, char b);
@@ -169,6 +150,16 @@ int charcmp(char a, char b)
 		return 1;
 	else
 		return 0;
+}
+
+int charcmpi(char a, char b);
+int charcmpi(char a, char b)
+{
+	if (a >= 'A' && a <= 'Z')
+		a += 'a' - 'A';
+	if (b >= 'A' && b <= 'Z')
+		b += 'a' - 'A';
+	return charcmp(a, b);
 }
 
 int nondchar(char c);
@@ -184,6 +175,12 @@ int my_strcmp(const char *cs, const char *ct, int case_insensitive, int director
 {
 	int (*char_comparer)(char, char) = case_insensitive ? charcmpi : charcmp;
 
+	// consume equal chars
+	for (; char_comparer(*cs, *ct) == 0 ; cs++, ct++)
+		if (*cs == '\0')
+			return 0;
+
+	// if directory ordering, also consume nondchars and any subsequent equal chars
 	if (directory_order) {
 		while (char_comparer(*cs, *ct) == 0 || nondchar(*cs) || nondchar(*ct)) {
 			if (char_comparer(*cs, *ct) == 0) {
@@ -197,14 +194,10 @@ int my_strcmp(const char *cs, const char *ct, int case_insensitive, int director
 				ct++;
 			}
 		}
-
-		return char_comparer(*cs, *ct);
-	} else {
-		for (; char_comparer(*cs, *ct) == 0 ; cs++, ct++)
-			if (*cs == '\0')
-				return 0;
-		return char_comparer(*cs, *ct);
 	}
+
+	// compare first non-equal, nondchar (if appropriate)
+	return char_comparer(*cs, *ct);
 }
 
 int numcmp(const char *s1, const char *s2)
