@@ -1,5 +1,41 @@
 /*
 
+(NB this code doesn't solve this problem)
+
+Add a field-handling capability, so sorting may be done on fields within lines,
+each field sorted according to an independent set of options. (The index for 
+this book was sorted with -df for the index category and -n for the page 
+numbers.)
+
+---
+
+danlucraft: This one looks quite involved...
+Don't think it needs to take multiple field sorting options, as long as the
+sort is stable... which quicksort is NOT. OK then... maybe it does need to take
+multiple sorting options.
+
+Can I assume that the earlier fields have priority?
+Should I allow to choose the separator? Or just default to space?
+
+This looks unambiguous and reasonable:
+
+   sort -df-n-rf -s ' '
+
+OK, looking at the problem again, and looking at the index, it appears that it
+means it wants to do sorting WITHIN the field (as the list of page numbers is 
+sorted within the line in index).
+
+So then in the index example the lines are sorted by the first field, and the 
+second field is sorted internally? Or am I overindexing on how the index is
+presented and really it's one category and one page number per line?
+
+OK looking in The C Answer Book.... even they punt on this! They don't allow
+different sort orders per field at all! AND they don't even handle "fields",
+only start and end index positions!!
+
+Given this is a completely underspecified problem, and to do it right would
+require a lot of C that we haven't been taught yet, 'm skipping it. 
+
 */
 
 #include <stdio.h>
@@ -9,6 +45,7 @@
 #define MAXLINES 200000
 #define MAXLEN 10
 #define ALLOCSIZE 100000*12*10
+#define DEFAULT_FIELD_SEPARATOR ' '
 
 static char allocbuf[ALLOCSIZE];
 static char *lineptr[MAXLINES];
