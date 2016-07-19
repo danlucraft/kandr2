@@ -1,7 +1,5 @@
 /*
 
-(NB this code doesn't solve this problem)
-
 Add a field-handling capability, so sorting may be done on fields within lines,
 each field sorted according to an independent set of options. (The index for 
 this book was sorted with -df for the index category and -n for the page 
@@ -34,7 +32,23 @@ different sort orders per field at all! AND they don't even handle "fields",
 only start and end index positions!!
 
 Given this is a completely underspecified problem, and to do it right would
-require a lot of C that we haven't been taught yet, 'm skipping it. 
+require a lot of C that we haven't been taught yet, I'm skipping it. 
+
+---
+
+OK after some reflection I decided I should define something that makes sense
+as the problem and implement it. So the plan is:
+
+ * swap the quicksort for a different, stable, sort algorithm (insertion sort,
+   because it's easy)
+ * add the ability to sort by a field, with a customisable separator
+ * but DON'T add the ability to specify different sort options for different
+   fields
+
+So to sort by -df for field 1 and -n for field 2 (with lines like "foo,12")
+you would do (exploiting the stability):
+
+    cat index | sort -n -s , -c 2 | sort -df -s , -c 1 
 
 */
 
@@ -43,8 +57,8 @@ require a lot of C that we haven't been taught yet, 'm skipping it.
 #include <stdlib.h>
 
 #define MAXLINES 200000
-#define MAXLEN 10
-#define ALLOCSIZE 100000*12*10
+#define MAXLEN 50
+#define ALLOCSIZE 100000*12*50
 #define DEFAULT_FIELD_SEPARATOR ' '
 
 static char allocbuf[ALLOCSIZE];
@@ -165,13 +179,40 @@ int my_strcmp(const char *cs, const char *ct, int case_insensitive, int director
 	return char_comparer(*cs, *ct);
 }
 
-int cmp(const char *s1, const char *s2, int numeric, int case_insensitive, int directory_order);
-int cmp(const char *s1, const char *s2, int numeric, int case_insensitive, int directory_order)
+void extract_field(char *s, char *dest, char sep, int field);
+void extract_field(char *s, char *dest, char sep, int field)
 {
+	char *start, *end;
+	while (field > 1) {
+		while (*s++ != sep)
+			;
+		field--;
+	}
+	start = s;
+	while (*s != sep && *s != '\0')
+		s++;
+	end = s;
+	strncpy(dest, (char *) start, end - start);
+	dest[end - start] = '\0';
+}
+
+int cmp(char *s1, char *s2, int numeric, int case_insensitive, int directory_order, char sep, int sort_column);
+int cmp(char *s1, char *s2, int numeric, int case_insensitive, int directory_order, char sep, int sort_column)
+{
+	char a[MAXLEN];
+	char b[MAXLEN];
+	if (sort_column != 0) {
+		extract_field(s1, (char *) &a, sep, sort_column);
+		extract_field(s2, (char *) &b, sep, sort_column);
+	} else {
+		strcpy(a, s1);
+		strcpy(b, s2);
+	}
+
 	if (numeric)
-		return numcmp(s1, s2);
+		return numcmp(a, b);
 	else
-		return my_strcmp(s1, s2, case_insensitive, directory_order);
+		return my_strcmp(a, b, case_insensitive, directory_order);
 }
 
 void swap(void *v[], int i, int j);
@@ -183,21 +224,18 @@ void swap(void *v[], int i, int j)
 	v[j] = temp;
 }
 
-void my_qsort(void *v[], int left, int right, int numeric, int comp_factor, int case_insensitive, int directory_order);
-void my_qsort(void *v[], int left, int right, int numeric, int comp_factor, int case_insensitive, int directory_order)
+void insertion_sort(void *v[], int n, int numeric, int comp_factor, int case_insensitive, int directory_order, char sep, int sort_column);
+void insertion_sort(void *v[], int n, int numeric, int comp_factor, int case_insensitive, int directory_order, char sep, int sort_column)
 {
-	int i, last;
-	if (left >= right)
-		return;
+	int i;
 
-	swap(v, left, (left+right)/2);
-	last = left;
-	for (i = left+1; i <= right; i++)
-		if (cmp(v[i], v[left], numeric, case_insensitive, directory_order) * comp_factor < 0)
-			swap(v, ++last, i);
-	swap(v, left, last);
-	my_qsort(v, left, last-1, numeric, comp_factor, case_insensitive, directory_order);
-	my_qsort(v, last+1, right, numeric, comp_factor, case_insensitive, directory_order);
+	for (i = 1; i < n; i++) {
+		int j = i;
+		while (j > 0 && cmp((char *) v[j-1], (char *) v[j], numeric, case_insensitive, directory_order, sep, sort_column) * comp_factor > 0) {
+			swap(v, j, j-1);
+			j--;
+		}
+	}
 }
 
 int main(int __unused argc, char *argv[])
@@ -207,25 +245,33 @@ int main(int __unused argc, char *argv[])
 	int comp_factor = 1;
 	int case_insensitive = 0;
 	int directory_order = 0;
+	char field_separator = DEFAULT_FIELD_SEPARATOR;
+	int sort_column = 0;
 
 	while (*++argv) {
 		if (argv[0][0] == '-') {
-			char *arg = argv[0];
-			while (*++arg) {
-				if (arg[0] == 'n')
-					numeric = 1;
-				if (arg[0] == 'r')
-					comp_factor = -1;
-				if (arg[0] == 'f')
-					case_insensitive = -1;
-				if (arg[0] == 'd')
-					directory_order = 1;
+			if (argv[0][1] == 's') {
+				field_separator = argv[1][0];
+			} else if (argv[0][1] == 'c') {
+				sort_column = atoi(argv[1]);
+			} else {
+				char *arg = argv[0];
+				while (*++arg) {
+					if (arg[0] == 'n')
+						numeric = 1;
+					if (arg[0] == 'r')
+						comp_factor = -1;
+					if (arg[0] == 'f')
+						case_insensitive = -1;
+					if (arg[0] == 'd')
+						directory_order = 1;
+				}
 			}
 		}
 	}
 
 	if ((nlines = readlines(lineptr, allocbuf, MAXLINES)) >= 0) {
-		my_qsort((void **) lineptr, 0, nlines - 1, numeric, comp_factor, case_insensitive, directory_order);
+		insertion_sort((void **) lineptr, nlines, numeric, comp_factor, case_insensitive, directory_order, field_separator, sort_column);
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
@@ -235,5 +281,23 @@ int main(int __unused argc, char *argv[])
 }
 
 /*
+
+$ cat chapter5/ex_5_17.test
+null character,5,30
+null statement,4,18
+null character,3,213
+object,2,195
+null statement,1,1
+null character,10,15
+object,56,193
+
+$ clang -Weverything chapter5/ex_5_17.c && cat chapter5/ex_5_17.test | ./a.out -s , -c 3 -n | ./a.out -s , -c 1
+null character,10,15
+null character,5,30
+null character,3,213
+null statement,1,1
+null statement,4,18
+object,56,193
+object,2,195
 
 */
