@@ -44,14 +44,19 @@ int main(int __unused argc, char *argv[])
 	int directory_order = 0;
 
 	while (*++argv) {
-		if (strcmp(argv[0], "-n") == 0)
-			numeric = 1;
-		if (strcmp(argv[0], "-r") == 0)
-			comp_factor = -1;
-		if (strcmp(argv[0], "-f") == 0)
-			case_insensitive = -1;
-		if (strcmp(argv[0], "-d") == 0)
-			directory_order = 1;
+		if (argv[0][0] == '-') {
+			char *arg = argv[0];
+			while (*++arg) {
+				if (arg[0] == 'n')
+					numeric = 1;
+				if (arg[0] == 'r')
+					comp_factor = -1;
+				if (arg[0] == 'f')
+					case_insensitive = -1;
+				if (arg[0] == 'd')
+					directory_order = 1;
+			}
+		}
 	}
 
 	if ((nlines = readlines(lineptr, allocbuf, MAXLINES)) >= 0) {
@@ -254,7 +259,7 @@ a
 ..b
 ..c
 c
-$ clang -Weverything chapter5/ex_5_16.c && cat chapter5/ex_5_16.test | ./a.out -d -f
+$ clang -Weverything chapter5/ex_5_16.c && cat chapter5/ex_5_16.test | ./a.out -df
 1
 11
 2
@@ -272,4 +277,5 @@ c
 ..c
 D
 E
+
 */
