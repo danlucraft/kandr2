@@ -1,6 +1,19 @@
 /*
 
-Example declaration unparser
+Modify this program so that it does not add redundant parentheses to 
+declarations.
+
+---
+
+The issue seems to be that it adds parentheses around a pointer even if there
+is no need. There is only a need if the next token is a [] or () which binds
+tighter than *.
+
+Test cases:
+
+ - "x * char"      should give "char *x"    not "char (*x)"
+ - "x [] * char"   should give "char *x[]"  not "char (*x[])"
+ - "x [] * * char" should give "char **x[]" not "char (*(*x[]))"
 
 */
 
@@ -81,22 +94,31 @@ int gettoken(void)
 int main()
 {
 	int type;
+	int previous_was_pointer = 0;
 
 	char temp[MAXTOKEN];
 
 	while (gettoken() != EOF) {
 		strcpy(out, token);
 		while ((type = gettoken()) != '\n')
-			if (type == PARENS || type == BRACKETS)
+			if (type == PARENS || type == BRACKETS) {
+				if (previous_was_pointer) {
+					sprintf(temp, "(%s)", out);
+					strcpy(out, temp);
+				}
+				previous_was_pointer = 0;
 				strcat(out, token);
-			else if (type == '*') {
-				sprintf(temp, "(*%s)", out);
+			} else if (type == '*') {
+				sprintf(temp, "*%s", out);
 				strcpy(out, temp);
+				previous_was_pointer = 1;
 			} else if (type == NAME) {
 				sprintf(temp, "%s %s", token, out);
 				strcpy(out, temp);
-			} else
+				previous_was_pointer = 0;
+			} else {
 				printf("invalid input at %s\n", token);
+			}
 		printf("%s\n", out);
 	}
 	return 0;
@@ -106,5 +128,13 @@ int main()
 
 $ clang -Weverything chapter5/ex_5_19.c  && echo "x () * [] * () char" | ./a.out
 char (*(*x())[])()
+
+// Test cases:
+
+$ clang -Weverything chapter5/ex_5_19.c  && echo "x * char" | ./a.out
+char *x
+
+$ clang -Weverything chapter5/ex_5_19.c  && echo "x [] * char" | ./a.out
+char *x[]
 
 */
