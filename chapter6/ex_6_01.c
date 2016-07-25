@@ -1,5 +1,12 @@
 /*
 
+Our version of getword does not properly handle underscores, string constants,
+comments, or preprocessor control lines. Write a better version.
+
+---
+
+This is where it gets stupid, why spend ages on this char counting as in 
+previous chapters when we're supposed to be learning about structures now?
 
 */
 
@@ -10,12 +17,19 @@
 
 #define MAXWORD 100
 //#define NKEYS (sizeof keytab / sizeof(struct key))
-#define NKEYS ((int) (sizeof keytab / sizeof keytab[0]))
+#define NKEYS ((int) (sizeof keytab / sizeof keytab[0]))  
+  #define TESTTHING goto
 
 struct key {
 	char *word;
 	int count;
 };
+
+// goto goto goto goto goto goto goto goto goto goto
+/* auto auto auto auto auto auto auto auto auto auto */
+
+
+
 
 static struct key keytab[] = {
 	{ "auto"     , 0 },
@@ -55,21 +69,72 @@ static struct key keytab[] = {
 int getword(char *word, int lim);
 int getword(char *word, int lim)
 {
-	int c;
+	int c, c1;
 	char *w = word;
-	while (isspace(c = getch()))
-		;
+
+	c = getch();
+	while (isspace(c)) {
+		ungetch(c);
+		while (isspace(c = getch()) && c != '\n')
+			;
+		if (c == '\n') {
+			while (isspace(c = getch()) && c != '\n')
+				;
+			if (c == '#')
+				while ((c = getch()) != '\n')
+					;
+		}
+	}
+
 	if (c != EOF)
 		*w++ = (char) c;
+
+	if (c == '/') {
+		c = getch();
+		if (c == '/') {
+			while ((c = getch()) != '\n' && c != EOF)
+				;
+			ungetch(c);
+		} else if (c == '*') {
+			c1 = getch();
+			while (!(c == '*' && c1 == '/')) {
+				c = c1;
+				c1 = getch();
+			}
+		}
+	}
+
+	// this assumes 'X', '\\', '\X' are the only possibilities
+	// and will go badly wrong otherwise
+	if (c == '\'') {
+		c1 = getch();
+		if (c1 == '\\') {
+			c1 = getch();
+			c1 = getch();
+		} else {
+			c1 = getch();
+		}
+	}
+
+	char __unused *testthing1 = "  '  ";
+	char __unused *testthing2 = "  \"  ";
+
+	if (c == '"')
+		while ((c = getch()) != '"')
+			if (c == '\\')
+				c = getch();
+
 	if (!isalpha(c)) {
 		*w = '\0';
 		return c;
 	}
+
 	for ( ; --lim > 0; w++)
 		if (!isalnum(*w = (char) getch())) {
 			ungetch(*w);
 			break;
 		}
+
 	*w = '\0';
 	return word[0];
 
@@ -105,9 +170,26 @@ int main()
 		if (isalpha(word[0]))
 			if ((n = binsearch(word, keytab, NKEYS)) >= 0)
 				keytab[n].count++;
+
 	for (n = 0; n < NKEYS; n++)
 		if (keytab[n].count > 0)
 			printf("%4d %s\n",
 					keytab[n].count, keytab[n].word);
 	return 0;
 }
+
+/*
+
+$ clang -Weverything -Wno-padded -Wno-unused-macros chapter6/getch.c chapter6/ex_6_01.c && cat chapter6/ex_6_01.c | ./a.out
+1 break
+11 char
+4 else
+2 for
+17 if
+14 int
+5 return
+1 static
+4 struct
+9 while
+
+*/
