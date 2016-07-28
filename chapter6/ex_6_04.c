@@ -1,8 +1,5 @@
 /*
 
-The example from Section 6.6 that counts arbitrary words in the input and
-outputs them in alphabetical order using a binary tree.
-
 */
 
 #include <stdio.h>
