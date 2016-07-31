@@ -98,13 +98,6 @@ void undef(char *name)
 	}
 }
 
-void test_lookup(char *name);
-void test_lookup(char *name)
-{
-	struct nlist *np = lookup(name);
-	printf("%s -> %s\n", name, (np == NULL ? "<not found>" : np->defn));
-}
-
 int strprefix(char *line, char *prefix);
 int strprefix(char *line, char *prefix)
 {
@@ -159,95 +152,67 @@ int extract_define(char *line, char **name, char **defn)
 	}
 }
 
-char *replace_range_in(char *line, unsigned long start, unsigned long end, char *replacement);
-char *replace_range_in(char *line, unsigned long start, unsigned long end, char *replacement)
+int is_word_char(char c);
+int is_word_char(char c)
 {
-	unsigned long len = strlen(line);
-	unsigned long replacement_len = strlen(replacement);
-	unsigned long newlen = len - (end - start) + replacement_len;
-
-	if (start > len || end > len)
-		return NULL;
-
-	char *newline = malloc(newlen * sizeof(char));
-	newline[0] = '\0';
-
-	strncat(newline, line, start);
-	strncat(newline, replacement, replacement_len);
-	strncat(newline, (line + end), len - end);
-
-	return newline;
+	return isalnum(c) || c == '_';
 }
 
-int get_word(char *line, char **word, char **start, char**end);
-int get_word(char *line, char **word, char **start, char**end)
+int is_non_word_char(char c);
+int is_non_word_char(char c)
+{
+	return !is_word_char(c) && c != '\n' && c != EOF && c != '\0';
+}
+
+// returns new place in line
+// 0 for end, 1 for word and 2 for nonword
+// result is placed in s, NULL means end of input, 
+// '\n' always appears as it's own word
+char *get_word_or_nonword(char *line, char **s);
+char *get_word_or_nonword(char *line, char **s)
 {
 	char *p = line;
-	char *name_work;
+	char *work = malloc((MAX_DEFINE_NAME + 1) * sizeof(char));
+	char *workp = work;
+	int (*char_discriminator)(char);
+	int return_val;
+	*s = NULL;
 
-	while (!isalnum(*p) && *p != '_') {
-		if (*p == '\n' || *p == EOF || *p == '\0')
-			return 0;
-		p++;
+	if (*p == '\n') {
+	   *workp++ = '\n';
+	   *workp = '\0';
+	   *s = strdup(work);
+	   free(work);
+	   return p + 1;
 	}
 
-	name_work = malloc((MAX_DEFINE_NAME + 1) * sizeof(char));
-	char *name_workp = name_work;
-	char *start_of_word = p;
-
-	while (isalnum(*p) || *p == '_')
-		*name_workp++ = *p++;
-	*name_workp = '\0';
-
-	*word = strdup(name_work);
-	*start = start_of_word;
-	*end = p;
-
-	free(name_work);
-
-	return 1;
-}
-
-// NB line may be freed in this call, only use the return value
-char *replace_defines(char *line);
-char *replace_defines(char *line)
-{
-	char *word;
-	char *start = NULL;
-	char *end = NULL;
-	char *current = line;
-	char *newline = line;
-	char *old_newline;
-	while (get_word(current, &word, &start, &end)) {
-		struct nlist *np = lookup(word);
-		if (np != NULL) {
-			unsigned long start_ix = (unsigned long) (current - line) + (unsigned long) (start - current);
-			unsigned long end_ix   = start_ix + strlen(word);
-			old_newline = newline;
-			newline = replace_range_in(newline, start_ix, end_ix, np->defn);
-			free(old_newline);
-		}
-		current = end;
+	if (*p == EOF || *p == '\0') {
+		*s = NULL;
+		return p;
 	}
-	return newline;
+
+	if (is_word_char(*p)) {
+		char_discriminator = is_word_char;
+		return_val = 1;
+	} else {
+		char_discriminator = is_non_word_char;
+		return_val = 2;
+	}
+
+	while (char_discriminator(*p) && workp < work + MAX_DEFINE_NAME)
+		*workp++ = *p++;
+
+	*workp = '\0';
+	*s = strdup(work);
+	free(work);
+
+	return p;
 }
 
 void test_strprefix(char *line, char *prefix);
 void test_strprefix(char *line, char *prefix)
 {
 	printf("  strprefix(\"%s\", \"%s\") = %d\n", line, prefix, strprefix(line, prefix));
-}
-
-void test_replace_range_in(char *line, unsigned long start, unsigned long end, char *replacement);
-void test_replace_range_in(char *line, unsigned long start, unsigned long end, char *replacement)
-{
-	printf("  replace_range_in(\"%s\", %lu, %lu, \"%s\") = ", line, start, end, replacement);
-	char *result = replace_range_in(line, start, end, replacement);
-			
-	if (result == NULL)
-		printf("NULL\n");
-	else
-		printf("\n                   \"%s\"\n", result);
 }
 
 int args_include(char **argv, char *arg);
@@ -270,20 +235,6 @@ void test_and_exit()
 	test_strprefix("", "");
 	test_strprefix("", "foo");
 
-	printf("\n** Test(replace_range_in):\n\n");
-
-	char test1[] = "hello, world";
-	test_replace_range_in(test1, 5, 6, ":");
-
-	char test2[] = "hello, world";
-	test_replace_range_in(test2, 0, 5, "hi");
-
-	char test3[] = "hello, world";
-	test_replace_range_in(test3, 0, 12, "total");
-
-	char test4[] = "he";
-	test_replace_range_in(test4, 0, 15, "too big index");
-
 	exit(0);
 }
 
@@ -298,17 +249,21 @@ int main(int __unused argc, char** argv)
 	size_t size;
 
 	while ((line = NULL, size = 0, getline(&line, &size, stdin)) > 0) {
+		char *current = line;
+		char *word = NULL;
+
+		while ((current = get_word_or_nonword(current, &word), word) != NULL) {
+			struct nlist *np = lookup(word);
+			printf("%s", (np != NULL ? np->defn : word));
+		}
+
 		char *name = NULL;
 		char *defn = NULL;
-
-		line = replace_defines(line);
-
 		if (extract_define(line, (char **) &name, (char **) &defn)) {
 			install(name, defn);
 			free(name);
 			free(defn);
 		}
-		printf("%s", line);
 		free(line);
 	}
 }
@@ -324,24 +279,9 @@ strprefix("hello, world", "") = 1
 strprefix("", "") = 1
 strprefix("", "foo") = 0
 
-** Test(replace_range_in):
-
-replace_range_in("hello, world", 5, 6, ":") =
-                 "hello: world"
-replace_range_in("hello, world", 0, 5, "hi") =
-                 "hi, world"
-replace_range_in("hello, world", 0, 12, "total") =
-                 "total"
-replace_range_in("he", 0, 15, "too big index") = NULL
-
-*/
-
-/*
-
-$ clang -Wno-comment -Weverything -Wno-padded -Wno-cast-align chapter6/ex_6_06.c && cat chapter6/ex_6_06.c | ./a.out | less | head -n 7
+$ clang -Wno-comment  -Weverything -Wno-padded -Wno-cast-align chapter6/ex_6_06.c && cat chapter6/ex_6_06.c | ./a.out | head -7
 #define DOUBLE_HASHSIZE 202
 #define HASHSIZE (202/2)
-
 /*
 
 Implement a simple version of the #define processor (i.e., no arguments)
