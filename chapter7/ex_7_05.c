@@ -12,7 +12,6 @@
 #define MAXOP   100 /* max size of operand or operator */
 #define NUMBER  '0' /* signal that a number was found */
 #define OP      '1' /* signal that it's an operation / command */
-#define MAXLINE 100 /* max length of input line */
 
 #define MAXVAL  100 /* maximum depth of val stack */
 
@@ -106,26 +105,6 @@ int type_of_op(char s[])
 	return NUMBER;
 }
 
-// returns EOF if reached the end,
-// otherwise the length of the line returned
-// including \n
-// does NOT include line terminator
-int get_line(char s[]);
-int get_line(char s[])
-{
-	int i = 0;
-	int c = 0;
-	while (i < MAXLINE && (c = getchar()) && c != '\n' && c != EOF)
-		s[i++] = (char) c;
-	if (c == EOF)
-		return EOF;
-	if (c == '\n' && i < MAXLINE) { // otherwise would try to put two \n in a row at the end of the line
-		s[i++] = (char) c;
-		return i + 1;
-	}
-	return i;
-}
-
 static double vars[26];
 static double last;
 
@@ -135,12 +114,12 @@ int main()
 	int type;
 	double op1, op2;
 	char s[MAXOP];
-	char line[MAXLINE];
-	int line_len;
+	char *line = NULL;
+	size_t line_len;
 
-	while ((line_len = get_line(line)) != EOF) {
+	while ((line = NULL, getline(&line, &line_len, stdin)) != -1) {
 		int from = 0;
-		while (from < line_len) {
+		while (from < (int) line_len) {
 			from = getop(line, from, s);
 			type = type_of_op(s);
 			if (type == NUMBER) {
