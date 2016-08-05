@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 #define MAXOP   100 /* max size of operand or operator */
 #define NUMBER  '0' /* signal that a number was found */
@@ -48,20 +49,6 @@ void clear(void)
 	sp = 0;
 }
 
-int streq(char* a, char* b);
-int streq(char* a, char* b)
-{
-	int i = 0;
-	while (a[i] != '\0') {
-		if (a[i] != b[i])
-			return 0;
-		i++;
-	}
-	if (b[i] != '\0')
-		return 0;
-	return 1;
-}
-
 
 int getop(char[], int, char[]);
 int getop(char line[], int from, char s[])
@@ -75,7 +62,7 @@ int getop(char line[], int from, char s[])
 	s[1] = '\0';
 	i = 1;
 
-	if (streq(s, "\n"))
+	if (strcmp(s, "\n") == 0)
 		return OP;
 	if (s[0] == EOF)
 		return EOF;
@@ -160,56 +147,56 @@ int main()
 				push(atof(s));
 			} else if (type == OP) {
 				// arithmetic
-				if (streq("+", s)) {
+				if (0 == strcmp("+", s)) {
 					push(pop() + pop());
-				} else if (streq("*", s)) {
+				} else if (0 == strcmp("*", s)) {
 					push(pop() * pop());
-				} else if (streq("-", s)) {
+				} else if (0 == strcmp("-", s)) {
 					op2 = pop();
 					push(pop() - op2);;
-				} else if (streq("/", s)) {
+				} else if (0 == strcmp("/", s)) {
 					op2 = pop();
 					if (op2 != 0.0)
 						push(pop() / op2);
 					else
 						printf("error: zero divisor\n");
-				} else if (streq("%", s)) {
+				} else if (0 == strcmp("%", s)) {
 					op2 = pop();
 					push(fmod(pop(),op2));
 
 				// stack manipulation 
-				} else if (streq("p", s) || streq("peek", s)) {
+				} else if (0 == strcmp("p", s) || 0 == strcmp("peek", s)) {
 					op2 = pop();
 					printf("\t%.8g\n", op2);
 					push(op2);
-				} else if (streq("d", s) || streq("dup", s)) {
+				} else if (0 == strcmp("d", s) || 0 == strcmp("dup", s)) {
 					op2 = pop();
 					push(op2);
 					push(op2);
-				} else if (streq("s", s) || streq("swap", s)) {
+				} else if (0 == strcmp("s", s) || 0 == strcmp("swap", s)) {
 					op1 = pop();
 					op2 = pop();
 					push(op1);
 					push(op2);
-				} else if (streq("c", s) || streq("clear", s)) {
+				} else if (0 == strcmp("c", s) || 0 == strcmp("clear", s)) {
 					clear();
 
 				// maths
-				} else if (streq("sin", s)) {
+				} else if (0 == strcmp("sin", s)) {
 					push(sin(pop()));
-				} else if (streq("cos", s)) {
+				} else if (0 == strcmp("cos", s)) {
 					push(cos(pop()));
-				} else if (streq("tan", s)) {
+				} else if (0 == strcmp("tan", s)) {
 					push(tan(pop()));
-				} else if (streq("exp", s)) {
+				} else if (0 == strcmp("exp", s)) {
 					push(exp(pop()));
-				} else if (streq("pow", s)) {
+				} else if (0 == strcmp("pow", s)) {
 					op2 = pop();
 					op1 = pop();
 					push(pow(op1, op2));
 
 				// pop and print
-				} else if (streq("\n", s)) {
+				} else if (0 == strcmp("\n", s)) {
 					last = pop();
 					printf("\t%.8g\n", last);
 
@@ -218,7 +205,7 @@ int main()
 					vars[s[1] - 'a'] = pop();
 				} else if (s[1] == '>') {
 					push(vars[s[0] - 'a']);
-				} else if (streq("_", s)) {
+				} else if (0 == strcmp("_", s)) {
 					push(last);
 				} else {
 					printf("error: unknown command %s\n", s);
