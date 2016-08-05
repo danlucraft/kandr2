@@ -1,5 +1,7 @@
 /*
 
+Rewite the postfix calculator of Chapter 4 to use scanf/sscanf to do the input
+and number conversion.
 
 */
 
@@ -9,10 +11,7 @@
 #include <math.h>
 #include <string.h>
 
-#define MAXOP   100 /* max size of operand or operator */
-#define NUMBER  '0' /* signal that a number was found */
-#define OP      '1' /* signal that it's an operation / command */
-
+#define MAXOP   100
 #define MAXVAL  100 /* maximum depth of val stack */
 
 static int sp = 0;         /* next free stack position */
@@ -48,155 +47,111 @@ void clear(void)
 	sp = 0;
 }
 
-
-int getop(char[], int, char[]);
-int getop(char line[], int from, char s[])
-{
-	int i = 0;
-	int c;
-
-	while ((c = line[from++], s[0] = (char) c) == ' ' || c == '\t')
-		;
-
-	s[1] = '\0';
-	i = 1;
-
-	if (strcmp(s, "\n") == 0)
-		return OP;
-	if (s[0] == EOF)
-		return EOF;
-
-	while ((c = line[from++], s[i++] = (char) c) != ' ' && c != '\t' && c != '\n' && c != EOF)
-		;
-	from--;
-
-	s[i - 1] = '\0';
-
-	return from;
-}
-
-int type_of_op(char[]);
-int type_of_op(char s[])
-{
-	// the rest of this function checks if the string in s is a number
-	int j = 0;
-
-	if (s[j] == '-')
-		j++;
-
-	if (!isdigit(s[j]) && s[j] != '.')
-		return OP;
-
-	while (isdigit(s[j]))
-		j++;
-
-	if (s[j] != '.' && s[j] != '\0')
-		return OP;
-
-	if (s[j] == '.')
-		j++;
-
-	while (isdigit(s[j]))
-		j++;
-
-	if (s[j] != '\0')
-		return OP;
-
-	return NUMBER;
-}
-
 static double vars[26];
 static double last;
 
-/* reverse polish calculator */
+void perform_op(char *s);
+void perform_op(char *s)
+{
+	double op1, op2;
+	// arithmetic
+	if (0 == strcmp("+", s)) {
+		push(pop() + pop());
+	} else if (0 == strcmp("*", s)) {
+		push(pop() * pop());
+	} else if (0 == strcmp("-", s)) {
+		op2 = pop();
+		push(pop() - op2);;
+	} else if (0 == strcmp("/", s)) {
+		op2 = pop();
+		if (op2 != 0.0)
+			push(pop() / op2);
+		else
+			printf("error: zero divisor\n");
+	} else if (0 == strcmp("%", s)) {
+		op2 = pop();
+		push(fmod(pop(),op2));
+
+		// stack manipulation 
+	} else if (0 == strcmp("p", s) || 0 == strcmp("peek", s)) {
+		op2 = pop();
+		printf("\t%.8g\n", op2);
+		push(op2);
+	} else if (0 == strcmp("d", s) || 0 == strcmp("dup", s)) {
+		op2 = pop();
+		push(op2);
+		push(op2);
+	} else if (0 == strcmp("s", s) || 0 == strcmp("swap", s)) {
+		op1 = pop();
+		op2 = pop();
+		push(op1);
+		push(op2);
+	} else if (0 == strcmp("c", s) || 0 == strcmp("clear", s)) {
+		clear();
+
+		// maths
+	} else if (0 == strcmp("sin", s)) {
+		push(sin(pop()));
+	} else if (0 == strcmp("cos", s)) {
+		push(cos(pop()));
+	} else if (0 == strcmp("tan", s)) {
+		push(tan(pop()));
+	} else if (0 == strcmp("exp", s)) {
+		push(exp(pop()));
+	} else if (0 == strcmp("pow", s)) {
+		op2 = pop();
+		op1 = pop();
+		push(pow(op1, op2));
+
+		// pop and print
+	} else if (0 == strcmp("\n", s)) {
+		// variables
+	} else if (s[0] == '>') {
+		vars[s[1] - 'a'] = pop();
+	} else if (s[1] == '>') {
+		push(vars[s[0] - 'a']);
+	} else if (0 == strcmp("_", s)) {
+		push(last);
+	} else {
+		printf("error: unknown command %s\n", s);
+	}
+}
+
 int main()
 {
-	int type;
-	double op1, op2;
-	char s[MAXOP];
+	char *s = malloc(MAXOP * sizeof(char));
 	char *line = NULL;
-	size_t line_len;
+	char *p = NULL;
+	size_t cap;
+	ssize_t line_len;
+	double fval;
+	int consumed = 0;
 
-	while ((line = NULL, getline(&line, &line_len, stdin)) != -1) {
-		int from = 0;
-		while (from < (int) line_len) {
-			from = getop(line, from, s);
-			type = type_of_op(s);
-			if (type == NUMBER) {
-				push(atof(s));
-			} else if (type == OP) {
-				// arithmetic
-				if (0 == strcmp("+", s)) {
-					push(pop() + pop());
-				} else if (0 == strcmp("*", s)) {
-					push(pop() * pop());
-				} else if (0 == strcmp("-", s)) {
-					op2 = pop();
-					push(pop() - op2);;
-				} else if (0 == strcmp("/", s)) {
-					op2 = pop();
-					if (op2 != 0.0)
-						push(pop() / op2);
-					else
-						printf("error: zero divisor\n");
-				} else if (0 == strcmp("%", s)) {
-					op2 = pop();
-					push(fmod(pop(),op2));
-
-				// stack manipulation 
-				} else if (0 == strcmp("p", s) || 0 == strcmp("peek", s)) {
-					op2 = pop();
-					printf("\t%.8g\n", op2);
-					push(op2);
-				} else if (0 == strcmp("d", s) || 0 == strcmp("dup", s)) {
-					op2 = pop();
-					push(op2);
-					push(op2);
-				} else if (0 == strcmp("s", s) || 0 == strcmp("swap", s)) {
-					op1 = pop();
-					op2 = pop();
-					push(op1);
-					push(op2);
-				} else if (0 == strcmp("c", s) || 0 == strcmp("clear", s)) {
-					clear();
-
-				// maths
-				} else if (0 == strcmp("sin", s)) {
-					push(sin(pop()));
-				} else if (0 == strcmp("cos", s)) {
-					push(cos(pop()));
-				} else if (0 == strcmp("tan", s)) {
-					push(tan(pop()));
-				} else if (0 == strcmp("exp", s)) {
-					push(exp(pop()));
-				} else if (0 == strcmp("pow", s)) {
-					op2 = pop();
-					op1 = pop();
-					push(pow(op1, op2));
-
-				// pop and print
-				} else if (0 == strcmp("\n", s)) {
-					last = pop();
-					printf("\t%.8g\n", last);
-
-				// variables
-				} else if (s[0] == '>') {
-					vars[s[1] - 'a'] = pop();
-				} else if (s[1] == '>') {
-					push(vars[s[0] - 'a']);
-				} else if (0 == strcmp("_", s)) {
-					push(last);
-				} else {
-					printf("error: unknown command %s\n", s);
-				}
-			} else {
-				printf("unknown token type: '%c'\n", type);
-			}
+	while ((free(line), line = NULL, line_len = getline(&line, &cap, stdin)) != -1) {
+		p = line;
+		while (strcmp(p, "\n") != 0 && strcmp(p, "") != 0) {
+			while (isspace(*p))
+				p++;
+			consumed = 0;
+			if (sscanf(p, "%lf%n", &fval, &consumed) && consumed > 0)
+				push(fval);
+			else if (sscanf(p, "%s%n", s, &consumed) && consumed > 0)
+				perform_op(s);
+			p += consumed;
 		}
+		last = pop();
+		printf("\t%.8g\n", last);
 	}
 	return 0;
 }
+
 /*
 
+$ clang -Weverything chapter7/ex_7_05.c && ./a.out 
+1 2 +
+	3
+_ sin p 10 *
+	0.14112001
+	1.4112001
 
 */
