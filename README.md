@@ -17,3 +17,5 @@ previous commit to this simply committed the example code unchanged.)
 
 Some of the files have my own notes in the top comment after the `---`, and most
 of them include the output from running the code in a comment at the bottom.
+
+I've been running this code with clang 703.0.31 on OSX.
