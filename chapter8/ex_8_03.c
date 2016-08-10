@@ -10,6 +10,8 @@ Design and write _flushbuf, fflush, and fclose.
 #include <stdlib.h> // for malloc
 #include <string.h> // for strlen
 
+#include <errno.h>
+
 //#define NULL      0 // already defined
 #define EOF       (-1)
 #define BUFSIZ    1024
@@ -54,6 +56,12 @@ FILE _iob[OPEN_MAX] = {
 
 #define PERMS 0666 // rw for owner, group, others
 
+void prints(char *s);
+void prints(char *s)
+{
+	write(stdout->fd, s, strlen(s));
+}
+
 // fopen: open file, return file ptr
 FILE *fopen(char *name, char *mode);
 FILE *fopen(char *name, char *mode)
@@ -67,6 +75,7 @@ FILE *fopen(char *name, char *mode)
 	for (fp = _iob; fp < _iob + OPEN_MAX; fp++)
 		if ((fp->flag & (_READ | _WRITE)) == 0)
 			break; // found free slot
+
 	if (fp >= _iob + OPEN_MAX) // no free slots
 		return NULL;
 
@@ -117,30 +126,96 @@ int _fillbuf(FILE *fp)
 	return (unsigned char) *fp->ptr++;
 }
 
-int _flushbuf(int, FILE *);
-
-void prints(char *s);
-void prints(char *s)
+int fflush(FILE *fp);
+int fflush(FILE *fp)
 {
-	write(stdout->fd, s, strlen(s));
+	ssize_t bufsize;
+
+	if ((fp->flag & (_WRITE | _EOF | _ERR)) != _WRITE)
+		return EOF;
+
+	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+
+	if (fp->cnt != (ssize_t) bufsize)
+		if (write(fp->fd, fp->base, (size_t) bufsize - (size_t) fp->cnt) == -1) {
+			fp->flag |= _ERR;
+			fp->cnt = 0;
+			return EOF;
+		}
+	fp->ptr = fp->base;
+	fp->cnt = (ssize_t) bufsize;
+
+	return 1;
+}
+
+int _flushbuf(int c, FILE *fp);
+int _flushbuf(int c, FILE *fp)
+{
+	ssize_t bufsize;
+
+	if ((fp->flag & (_WRITE | _EOF | _ERR)) != _WRITE)
+		return EOF;
+
+	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+
+	if (fp->base == NULL) {// no buffer yet
+		if ((fp->base = malloc((unsigned long) bufsize)) == NULL)
+			return EOF; // can't allocate buffer
+		fp->ptr = fp->base;
+		fp->cnt = (ssize_t) bufsize;
+	}
+	fflush(fp);
+
+	*(fp->ptr++) = (char) c;
+	fp->cnt--;
+	return c;
+}
+
+int fclose(FILE *fp);
+int fclose(FILE *fp)
+{
+	int result = close(fp->fd);
+	free(fp->base);
+	fp->base = NULL;
+	fp->flag = 0;
+	return result;
 }
 
 int main()
 {
 	FILE *fin;
+	FILE *fout, *fout2;
 
-	if ((fin = fopen("chapter8/sec_8_05.c", "r")) == NULL)
-		prints("error opening sec_8_05.c\n");
+	if ((fin = fopen("chapter8/ex_8_03.c", "r")) == NULL)
+		prints("error opening ex_8_03.c\n");
 	prints("opened sec_8_05.c\n");
 
-	char buf[1000];
+	if ((fout = fopen("test1", "w")) == NULL)
+		prints("error opening test1 to write\n");
+
 	int i = 0;
 	int c;
-	while ((c = getc(fin)) != EOF && i < 1000 - 1)
-		buf[i++] = (char) c;
-	buf[i] = '\0';
-	prints(buf);
-	prints("\n");
+	while ((c = getc(fin)) != EOF && i++ < 100) {
+		putc((char) c, stdout);
+		putc((char) c, fout);
+	}
+	putc('\n', stdout);
+	putc('\n', fout);
+	fflush(stdout);
+	fflush(fout);
+	fclose(fout);
+
+	if ((fout2 = fopen("test2", "w")) == NULL)
+		prints("error opening test2 to write\n");
+
+	if (fout == fout2)
+		prints("used same slot, fclose works!\n");
+	else
+		prints("used different slot\n");
+
+	putc('a', fout2);
+	putc('b', fout2);
+	fflush(fout2);
 }
 
 
