@@ -1,5 +1,29 @@
 /*
 
+Rewrite fopen and _fillbuf with fields instead of explicit bit operations.
+Compare code size and execution speed.
+
+---
+
+Execution speed is not obviously different on a 1MB file.
+
+Thoughts on code comparison:
+
+  * I would initially have preferred to go the field route rather than bit
+    twiddling, as I think it's clearer... however now I'm not sure:
+  * Pro for bits: Structure initialization is less clear 
+    ("0, 1, 1, 0, 0" vs "_WRITE | _UNBUF")
+  * Pro for bits: The structure itself is more untidy with fields? Previously
+    ALL options were captured in one field but now there are N fields.
+  * Pro for fields: the conitionals are easier to understand 
+    ("!fp->flag_read || fp->flag_eof || fp->flag_err" vs
+	 "(fp->flag & (_READ | _EOF | _ERR)) != _READ")
+  * Pro for bits: clearing everything to zero is now verbose as every field
+    must be set (I'd wrap this up in a function though so it wouldn't be too
+	bad.
+
+Overall I could see myself using bits instead of expanded fields. It would
+require me to master the idioms involved but that shouldn't be too hard.
 
 */
 
@@ -18,31 +42,30 @@ typedef struct _iobuf {
 	ssize_t  cnt;	  // characters left
 	char	 *ptr;	  // next character position
 	char	 *base;	  // location of buffer
-	int		 flag;	  // mode of file access
+
+	int		 flag_read;	// flags for mode of file access:
+	int		 flag_write;
+	int		 flag_unbuf;
+	int		 flag_eof;
+	int		 flag_err;
+
 	int		 fd;	  // file descriptor
 } FILE;
 
-enum flags {
-	_READ = 01,	  // file open for reading
-	_WRITE = 02,  // file open for writing
-	_UNBUF = 04,  // file is unbuffered
-	_EOF = 010,	  // EOF has occurred on this file
-	_ERR = 020	  // error occurred on this file
-};
 
 extern FILE _iob[OPEN_MAX];
 FILE _iob[OPEN_MAX] = {
-	{ 0, (char *) 0, (char *) 0, _READ, 0 },
-	{ 0, (char *) 0, (char *) 0, _WRITE, 1 },
-	{ 0, (char *) 0, (char *) 0, _WRITE | _UNBUF, 2 }
+	{ 0, (char *) 0, (char *) 0, 1, 0, 0, 0, 0, 0 },
+	{ 0, (char *) 0, (char *) 0, 0, 1, 0, 0, 0, 1 },
+	{ 0, (char *) 0, (char *) 0, 0, 1, 1, 0, 0, 2 }
 };
 
 #define stdin  (&_iob[0])
 #define stdout (&_iob[1])
 #define stderr (&_iob[2])
 
-#define feof(p)	  (((p)->flag & _EOF) != 0)
-#define ferror(p) (((p)->flag & _ERR) != 0)
+#define feof(p)	  ((p)->flag_eof)
+#define ferror(p) ((p)->flag_err)
 #define fileno(p) ((p)->fd)
 
 #define getc(p)	  (--(p)->cnt >= 0 ? (unsigned char) *(p)->ptr++ : _fillbuf(p))
@@ -64,7 +87,7 @@ FILE *fopen(char *name, char *mode)
 		return NULL;
 
 	for (fp = _iob; fp < _iob + OPEN_MAX; fp++)
-		if ((fp->flag & (_READ | _WRITE)) == 0)
+		if (!fp->flag_read && !fp->flag_write)
 			break; // found free slot
 	if (fp >= _iob + OPEN_MAX) // no free slots
 		return NULL;
@@ -85,7 +108,19 @@ FILE *fopen(char *name, char *mode)
 	fp->fd = fd;
 	fp->cnt = 0;
 	fp->base = NULL;
-	fp->flag = (*mode == 'r') ? _READ : _WRITE;
+	if (*mode == 'r') {
+		fp->flag_read  = 1;
+		fp->flag_write = 0;
+		fp->flag_unbuf = 0;
+		fp->flag_eof   = 0;
+		fp->flag_err   = 0;
+	} else {
+		fp->flag_read  = 0;
+		fp->flag_write = 1;
+		fp->flag_unbuf = 0;
+		fp->flag_eof   = 0;
+		fp->flag_err   = 0;
+	}
 
 	return fp;
 }
@@ -95,10 +130,10 @@ int _fillbuf(FILE *fp)
 {
 	unsigned long bufsize;
 
-	if ((fp->flag & (_READ | _EOF | _ERR)) != _READ)
+	if (!fp->flag_read || fp->flag_eof || fp->flag_err)
 		return EOF;
 
-	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+	bufsize = fp->flag_unbuf ? 1 : BUFSIZ;
 	if (fp->base == NULL) // no buffer yet
 		if ((fp->base = malloc(bufsize)) == NULL)
 			return EOF; // can't allocate buffer
@@ -107,9 +142,9 @@ int _fillbuf(FILE *fp)
 	fp->cnt = read(fp->fd, fp->ptr, bufsize);
 	if (--fp->cnt < 0) {
 		if (fp->cnt == -1)
-			fp->flag |= _EOF;
+			fp->flag_eof = 1;
 		else
-			fp->flag |= _ERR;
+			fp->flag_err = 1;
 		fp->cnt = 0;
 		return EOF;
 	}
