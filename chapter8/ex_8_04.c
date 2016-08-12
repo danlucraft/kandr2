@@ -4,6 +4,10 @@ Write fseek. Make sure it works well with the buffering code.
 
 int fseek(FILE *fp, long offset, int origin)
 
+---
+
+Note this doesn't #include stdio
+
 */
 
 #include <sys/file.h> // contains open and O_RDONLY etc
@@ -102,21 +106,34 @@ FILE *fopen(char *name, char *mode)
 	return fp;
 }
 
+ssize_t _fbufsize(FILE *fp);
+ssize_t _fbufsize(FILE *fp)
+{
+	return (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+}
+
+void _fclearbuf(FILE *fp);
+void _fclearbuf(FILE *fp)
+{
+	fp->ptr = fp->base;
+	if ((fp->flag & _READ) == _READ)
+		fp->cnt = 0;
+	else
+		fp->cnt = (ssize_t) _fbufsize(fp);
+}
+
 int _fillbuf(FILE *fp);
 int _fillbuf(FILE *fp)
 {
-	unsigned long bufsize;
-
 	if ((fp->flag & (_READ | _EOF | _ERR)) != _READ)
 		return EOF;
 
-	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
 	if (fp->base == NULL) // no buffer yet
-		if ((fp->base = malloc(bufsize)) == NULL)
+		if ((fp->base = malloc((unsigned long)_fbufsize(fp))) == NULL)
 			return EOF; // can't allocate buffer
 
 	fp->ptr = fp->base;
-	fp->cnt = read(fp->fd, fp->ptr, bufsize);
+	fp->cnt = read(fp->fd, fp->ptr, (size_t) _fbufsize(fp));
 	if (--fp->cnt < 0) {
 		if (fp->cnt == -1)
 			fp->flag |= _EOF;
@@ -131,21 +148,16 @@ int _fillbuf(FILE *fp)
 int fflush(FILE *fp);
 int fflush(FILE *fp)
 {
-	ssize_t bufsize;
-
 	if ((fp->flag & (_WRITE | _EOF | _ERR)) != _WRITE)
 		return EOF;
 
-	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
-
-	if (fp->cnt != (ssize_t) bufsize)
-		if (write(fp->fd, fp->base, (size_t) bufsize - (size_t) fp->cnt) == -1) {
+	if (fp->cnt != (ssize_t) _fbufsize(fp))
+		if (write(fp->fd, fp->base, (size_t) _fbufsize(fp) - (size_t) fp->cnt) == -1) {
 			fp->flag |= _ERR;
 			fp->cnt = 0;
 			return EOF;
 		}
-	fp->ptr = fp->base;
-	fp->cnt = (ssize_t) bufsize;
+	_fclearbuf(fp);
 
 	return 1;
 }
@@ -153,18 +165,13 @@ int fflush(FILE *fp)
 int _flushbuf(int c, FILE *fp);
 int _flushbuf(int c, FILE *fp)
 {
-	ssize_t bufsize;
-
 	if ((fp->flag & (_WRITE | _EOF | _ERR)) != _WRITE)
 		return EOF;
 
-	bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
-
 	if (fp->base == NULL) {// no buffer yet
-		if ((fp->base = malloc((unsigned long) bufsize)) == NULL)
+		if ((fp->base = malloc((unsigned long)_fbufsize(fp))) == NULL)
 			return EOF; // can't allocate buffer
-		fp->ptr = fp->base;
-		fp->cnt = (ssize_t) bufsize;
+		_fclearbuf(fp);
 	}
 	fflush(fp);
 
@@ -187,8 +194,7 @@ int fseek(FILE *fp, long long offset, int origin);
 int fseek(FILE *fp, long long offset, int origin)
 {
 	fflush(fp);
-	fp->cnt = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
-	fp->ptr = fp->base;
+	_fclearbuf(fp);
 	lseek(fp->fd, offset, origin);
 	return 1;
 }
