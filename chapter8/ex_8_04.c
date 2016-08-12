@@ -1,6 +1,8 @@
 /*
 
+Write fseek. Make sure it works well with the buffering code.
 
+int fseek(FILE *fp, long offset, int origin)
 
 */
 
@@ -14,7 +16,7 @@
 
 //#define NULL      0 // already defined
 #define EOF       (-1)
-#define BUFSIZ    1024
+#define BUFSIZ    10
 #define OPEN_MAX  20    // max files open at once
 
 typedef struct _iobuf {
@@ -181,43 +183,71 @@ int fclose(FILE *fp)
 	return result;
 }
 
-int main()
+int fseek(FILE *fp, long long offset, int origin);
+int fseek(FILE *fp, long long offset, int origin)
 {
-	FILE *fin;
-	FILE *fout, *fout2;
-
-	if ((fin = fopen("chapter8/ex_8_03.c", "r")) == NULL)
-		prints("error opening ex_8_03.c\n");
-	prints("opened sec_8_05.c\n");
-
-	if ((fout = fopen("test1", "w")) == NULL)
-		prints("error opening test1 to write\n");
-
-	int i = 0;
-	int c;
-	while ((c = getc(fin)) != EOF && i++ < 100) {
-		putc((char) c, stdout);
-		putc((char) c, fout);
-	}
-	putc('\n', stdout);
-	putc('\n', fout);
-	fflush(stdout);
-	fflush(fout);
-	fclose(fout);
-
-	if ((fout2 = fopen("test2", "w")) == NULL)
-		prints("error opening test2 to write\n");
-
-	if (fout == fout2)
-		prints("used same slot, fclose works!\n");
-	else
-		prints("used different slot\n");
-
-	putc('a', fout2);
-	putc('b', fout2);
-	fflush(fout2);
+	fflush(fp);
+	fp->cnt = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+	fp->ptr = fp->base;
+	lseek(fp->fd, offset, origin);
+	return 1;
 }
 
+int main()
+{
+	FILE *fin, *fout;
 
+	if ((fin = fopen("chapter8/ex_8_04.test", "r")) == NULL)
+		prints("error opening ex_8_04.test\n");
 
+	// reading seek test
+	for (int i = 0; i < 6; i++)
+		putc((char) getc(fin), stdout);
 
+	fseek(fin, 0, 0);
+
+	for (int i = 0; i < 6; i++)
+		putc((char) getc(fin), stdout);
+
+	fflush(stdout);
+
+	// writing seek test
+	
+	if ((fout = fopen("chapter8/ex_8_04.test", "a")) == NULL)
+		prints("error opening ex_8_04.test\n");
+
+	putc('1', fout);
+	putc('2', fout);
+	putc('3', fout);
+	fseek(fout, 0, 0);
+	fflush(fout);
+	putc('7', fout);
+	putc('8', fout);
+	putc('9', fout);
+	fflush(fout);
+}
+
+/*
+
+$ cat chapter8/ex_8_04.test
+abcde
+fghij
+klmno
+pqrst
+uvqxy
+z
+
+$ git checkout chapter8/ex_8_04.test && clang -Weverything -Wno-unused-macros -Wno-padded chapter8/ex_8_04.c && ./a.out
+abcde
+abcde
+
+$ cat chapter8/ex_8_04.test
+789de
+fghij
+klmno
+pqrst
+uvqxy
+z
+123$
+
+*/
