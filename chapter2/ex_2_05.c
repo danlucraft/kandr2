@@ -30,3 +30,4 @@ int main()
 	test("abc", "c");
 	test("abc", "d");
 }
+

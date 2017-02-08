@@ -50,3 +50,4 @@ squeeze("abcde", "bd"): ace
 squeeze("abc", ""): abc
 squeeze("", "456"): 
 */
+
