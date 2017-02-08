@@ -5,5 +5,5 @@ int main()
 	printf("EOF = %d\n", EOF);
 }
 
-// $ clang 1_7.c && ./a.out
+// $ clang chapter1/ex_1_07.c && ./a.out
 // EOF = -1
