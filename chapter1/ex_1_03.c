@@ -2,7 +2,8 @@
 
 int main()
 {
-	float fahr, celsius;
+	/* K&R2 uses float here, but nowadays literals are doubles */
+	double fahr, celsius;
 	int lower, upper, step;
 
 	lower = 0;
