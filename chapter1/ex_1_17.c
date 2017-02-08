@@ -82,3 +82,9 @@ int get_line_old(char s[], int lim)
 	s[i + 1] = 0;
 	return i;
 }
+
+// $ clang -Weverything chapter1/ex_1_17.c && head -n 20 chapter1/ex_1_17.c | ./a.out
+// /* Should print out all input lines that are longer than 80 characters (in full) */
+// /* Should print out all input lines that are longer than 80 characters (in full) Should print out all input lines that are longer than 80 characters (in full) */
+// 	// need extra 1 to detect if line is 81 chars (or include the newline) and extra 1 to hold \0
+
