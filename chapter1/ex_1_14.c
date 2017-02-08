@@ -24,7 +24,7 @@ int main()
 	}
 }
 
-// $ clang ex_1_14.c && cat ex_1_14.c | ./a.out 
+// $ clang chapter1/ex_1_14.c && head -n 25  chapter1/ex_1_14.c | ./a.out 
 //  A: ......
 //  B:
 //  C: ..............
