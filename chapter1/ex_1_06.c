@@ -11,14 +11,16 @@ int main()
 }
 
 // output:
-// $ clang 1_6.c && ./a.out
+// $ clang chapter1/ex_1_06.c && ./a.out
 // a
 // 97 1
 // 10 1
 // b
 // 98 1
 // 10 1
-// c
+// abc
+// 97 1
+// 98 1
 // 99 1
 // 10 1
 // -1 0
