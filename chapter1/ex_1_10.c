@@ -15,3 +15,10 @@ int main()
 			putchar(c);
 	}
 }
+// $ clang -Weverything chapter1/ex_1_10.c && ./a.out
+// a
+// a
+// 
+// \t
+// \
+// \\
