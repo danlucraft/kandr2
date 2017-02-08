@@ -6,7 +6,8 @@
 #define LOWER  0
 #define STEP   20
 
-float fahr_to_celsius(int fahr) {
+double fahr_to_celsius(int fahr);
+double fahr_to_celsius(int fahr) {
 	return (5.0/9.0)*(fahr-32);
 }
 
@@ -16,7 +17,7 @@ int main()
 		printf(" %3d %6.1f\n", fahr, fahr_to_celsius(fahr));
 }
 
-// $ clang ex_1_15.c && ./a.out
+// $ clang chapter1/ex_1_15.c && ./a.out
 //    0  -17.8
 //   20   -6.7
 //   40    4.4
