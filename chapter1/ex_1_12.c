@@ -18,7 +18,19 @@ int main()
 	}
 }
 
-// $ clang ex_1_12.c && cat ex_1_12.c | ./a.out
+// $ clang chapter1/ex_1_12.c && cat chapter1/ex_1_12.c | ./a.out
+// /*
+// Print
+// each
+// word
+// in
+// the
+// input,
+// one
+// word
+// per
+// line
+// */
 // #include
 // <stdio.h>
 // int
@@ -51,19 +63,3 @@ int main()
 // ==
 // '\n')
 // {
-// if
-// (inword)
-// putchar('\n');
-// inword
-// =
-// 0;
-// }
-// else
-// {
-// putchar(c);
-// inword
-// =
-// 1;
-// }
-// }
-// }
