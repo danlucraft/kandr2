@@ -49,7 +49,7 @@ int main()
 //                                                                                             
 
 /*
-$ clang -Wno-newline-eof -Weverything ex_1_18.c && cat ex_1_18.c | ./a.out
+$ clang -Wno-newline-eof -Weverything chapter1/ex_1_18.c && head -n 50 chapter1/ex_1_18.c | ./a.out
 // Should remove trailing spaces and tabs, and remove whitespace only lines
 //     (up to 80 chars)
 #include <stdio.h>
