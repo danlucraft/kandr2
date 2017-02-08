@@ -27,7 +27,10 @@ int main()
 {
 	test("abc", "a");
 	test("abc", "b");
+	test("abc", "ba");
 	test("abc", "c");
+	test("abc", "cb");
+	test("abc", "iupuwerwerb");
 	test("abc", "d");
 }
 
