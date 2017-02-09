@@ -1,7 +1,7 @@
 // vim: noai:ts=4:sw=4
 /* 
 
-Write a function invert(x,p,n) that returns x with then bits that begin at 
+Write a function invert(x,p,n) that returns x with the n bits that begin at 
 position p inverted (i.e., 1 changed into 0 and vice versa), leaving the 
 others unchanged.
 
@@ -32,7 +32,7 @@ unsigned int invert(unsigned int x, int p, int n)
     // zero except for n rightmost bits 
     unsigned int u = ~((unsigned) ~0 << n);
 
-    // move 1 bits into place
+    // move set bits into place
     unsigned int u1 = u << (p - n + 1);
 
     // XOR to flip bits
