@@ -17,12 +17,15 @@ void print_bits(unsigned int x);
 void test_getbits(unsigned x, int p, int n);
 void test_setbits(unsigned x, int p, int n, unsigned y);
 
-// getbits: get n bits from position p */ 
+// getbits: from position p get n bits
+// nb recall that this means get the n bits *beneath* p, not *above*
 unsigned getbits(unsigned x, int p, int n)
 {
 	return (x >> (p+1-n)) & (unsigned) ~(~0 << n);
 }
 
+// returns x with the n bits that begin at position p set 
+// to the rightmost n bits of y, leaving the other bits unchanged. 
 unsigned setbits(unsigned x, int p, int n, unsigned y)
 {
 	// create int with 1s only in first n columns
@@ -69,7 +72,7 @@ void test_setbits(unsigned x, int p, int n, unsigned y)
 	print_bits(x);
 	printf(", %d, %d, ", p, n);
 	print_bits(y);
-	printf(") = ");
+	printf(") = \n        ");
 	print_bits(setbits(x, p, n, y));
 	printf("\n");
 }
