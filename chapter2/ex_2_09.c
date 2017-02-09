@@ -24,20 +24,23 @@ Assume that the rightmost non-zero bit is at column n:
             v
    .........1000000
 
-If you subtract 1 from x, you get this (where all the dotted portions are not changed):
+If you subtract 1 from x, you get this (where all the dotted portions are not
+changed):
 
    .........0111111
 
-Now if you AND that with x, all the dotted portion will have the same bit values so 
-won't change from x, and all the other bits are opposite so will become 0.
+Now if you AND that with x, all the dotted portion will have the same bit
+values so won't change from x, and all the other bits are opposite so will 
+become 0.
 
-What you're left with is the dotted portion is unchanged, but the bit in column n (the
-rightmost non-zero bit) is switched from 1 to 0.
+What you're left with is the dotted portion is unchanged, but the bit in
+column n (the rightmost non-zero bit) is switched from 1 to 0.
 
 */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void print_bits(unsigned int x);
 void print_bits(unsigned int x)
@@ -71,10 +74,8 @@ int bitcount2(unsigned int x)
 {
     int b = 0;
 
-    while (x) {
-        b++;
-        x &= (x - 1);
-    }
+    for (b = 0; x; b++, x &= (x - 1))
+		;
 
     return b;
 }
@@ -90,28 +91,41 @@ void test_bitcount(unsigned int x)
     printf("%d\n", bitcount2(x));
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    //for (int i = 0; i < 100000000; i++)
-        //bitcount((unsigned) rand());
+	test_bitcount(3);
+	test_bitcount(15);
+	int use_fast_version = 
+		(argc > 1 && 
+		 strcmp("--fast", *(argv + 1)) == 0);
 
-    for (int i = 0; i < 100000000; i++)
-        bitcount2((unsigned) rand());
+	if (use_fast_version) {
+		printf("Fast version\n");
+		for (int i = 0; i < 100000000; i++)
+			bitcount2((unsigned) rand());
+	}
+	else {
+		printf("Slow version\n");
+		for (int i = 0; i < 100000000; i++)
+				bitcount((unsigned) rand());
+	}
 }
 
 /*
 
-   $ clang -g -Wno-newline-eof -Weverything ex_2_09.c && time ./a.out
-
-   real    0m19.103s
-   user    0m19.065s
-   sys     0m0.025s
-
-   $ clang -g -Wno-newline-eof -Weverything ex_2_09.c && time ./a.out
-
-   real    0m5.553s
-   user    0m5.538s
-   sys     0m0.010s
+// $ clang -Weverything chapter2/ex_2_09.c && time ./a.out
+// Slow version
+// 
+// real	0m21.780s
+// user	0m21.702s
+// sys	0m0.029s
+//
+// $ clang -Weverything chapter2/ex_2_09.c && time ./a.out --fast
+// Fast version
+// 
+// real	0m5.560s
+// user	0m5.530s
+// sys	0m0.010s
 
 */
 
