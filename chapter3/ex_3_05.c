@@ -8,6 +8,7 @@ base b character representation in the string s.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 void reverse(char s[]);
 void reverse(char s[])
@@ -32,7 +33,8 @@ char digit(unsigned int v)
 void itob(int n, char s[], int b);
 void itob(int n, char s[], int b)
 {
-	// if b < 2 raise an error or whatever you do in C to raise an error here.
+	// TODO: if b < 2 raise an error or whatever you do in C to raise an error here.
+
 	int i = 0;
 	int sign = n;
 
@@ -86,4 +88,8 @@ int main()
 	test_itob(1, 16);
 	test_itob(-0, 16);
 	test_itob(-1, 16);
+	test_itob(INT_MIN, 16);
+	test_itob(INT_MAX, 16);
+	test_itob(INT_MIN, 10);
+	test_itob(INT_MAX, 10);
 }
