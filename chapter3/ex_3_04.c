@@ -69,7 +69,10 @@ int main()
 	i2 = (int) 0xFFFFFFFF;
 	myitoa(i2, s);
 	printf("%d: %s\n", i2, s);
-	printf("-33 %% 10: %d abs() %d\n", (-33) % 10, abs((-33) % 10));
+	printf("-33 %% 10: %d\n", (-33) % 10);
+	printf("abs(-33 %% 10 ): %d\n", abs((-33) % 10));
+	printf("abs(-33 %% 20 ): %d\n", (-33 % 20));
+	printf("abs(-33 %% 21 ): %d\n", (-33 % 21));
 
 	printf("INT_MIN: %d, INT_MAX: %d\n", INT_MIN, INT_MAX);
 	printf("INT_MIN - 1: %d, INT_MAX + 1: %d\n", INT_MIN - 1, INT_MAX + 1);
@@ -92,10 +95,12 @@ int main()
 /*
 
 (in twos comp the smallest integer is 10000..  and 111111... is -1)
+(i.e. INT_MIN is "bigger" than INT_MAX. This is because they both have n - 1
+bits to represent the number except the positive representation includes 0
+so has one less.)
 
-This is because -INT_MIN would be INT_MAX + 1, so int can't represent 
+This is because -INT_MIN would be INT_MAX + 1, so int can't represent
 -INT_MIN. Instead it ends up being INT_MAX + 1 which wraps to INT_MIN anyway.
 So the initial -n in itoa doesn't work (-INT_MIN can't be represented in int).
 
 */
-
