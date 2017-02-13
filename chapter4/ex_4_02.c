@@ -2,7 +2,7 @@
 
 Write double atof(char s[]) that can handle notation like:
 
-  123.45e-6
+	123.45e-6
 
 */
 
@@ -13,10 +13,11 @@ Write double atof(char s[]) that can handle notation like:
 double myatof(char s[]);
 double myatof(char s[])
 {
+	int sign = 1;
 	double val = 0.0;
-	double power = 1.0;
-	double sign = 1.0;
-	
+	int power = 1;
+	int exp = 0;
+
 	int i = 0;
 
 	while (isspace(s[i]))
@@ -33,23 +34,22 @@ double myatof(char s[])
 		i++;
 		while (s[i] != '\0' && s[i] != 'e') {
 			val = val*10.0 + s[i] - '0';
-			power = power * 10.0;
+			power = power * 10;
 			i++;
 		}
 	}
-	int exp = 0;
 	if (s[i] == 'e') {
 		i++;
-		int negative_exp = 0;
+		int exp_negative = 0;
 		if (s[i] == '-')
-			negative_exp = 1;
+			exp_negative = 1;
 		if (s[i] == '+' || s[i] == '-')
 			i++;
 		while (s[i] != '\0') {
 			exp = exp*10 + s[i] - '0';
 			i++;
 		}
-		if (negative_exp)
+		if (exp_negative)
 			exp = -exp;
 	}
 
