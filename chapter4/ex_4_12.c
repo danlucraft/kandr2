@@ -6,6 +6,12 @@ by calling a recursive routine
 danlucraft: I found this one a little mind-bending, and I'm not sure if
 the code is particularly easy to understand, though it is clean.
 
+The weirdness is due to wanting to generate the string largest digit first
+but the usual recursive scheme generating them from the smallest. So the
+recursive function gets the smallest digit but saves it until the recursion
+bubbles back up again, with the return value indicated where in the string
+we have reached.
+
 */
 
 #include <stdio.h>
