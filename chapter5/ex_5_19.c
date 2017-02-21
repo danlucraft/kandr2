@@ -11,10 +11,13 @@ tighter than *.
 
 Test cases:
 
- - "x * char"      should give "char *x"    not "char (*x)"
- - "x [] * char"   should give "char *x[]"  not "char (*x[])"
- - "x [] * * char" should give "char **x[]" not "char (*(*x[]))"
+ - "x * char"       should give "char *x"    not "char (*x)"
+ - "x [] * char"    should give "char *x[]"  not "char (*x[])"
+ - "x [] * * char"  should give "char **x[]" not "char (*(*x[]))"
 
+AND
+
+ - "x [] * [] char" should still give "char (*x[])[]"  not "char *x[][]"
 */
 
 #include <stdio.h>
