@@ -1,6 +1,6 @@
 /*
 
-Define a macro s w a p ( t , x , y ) that interchanges two arguments of type 
+Define a macro swap(t, x, y) that interchanges two arguments of type 
 t. (Block structure will help.)
 
 */
